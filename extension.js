@@ -66,7 +66,7 @@ var computer_provider = {
     getChildren: function(element) {
         if ((element === undefined || element === null) && process_connection !== null) {
             let arr = [];
-            for (var w in windows) if (!windows[w].isMonitor) arr.push(windows[w].title);
+            for (var w in windows) if (!windows[w].isMonitor) arr.push(windows[w].term.title);
             return arr;
         }
         else return null;
@@ -82,7 +82,7 @@ var monitor_provider = {
     getChildren: function(element) {
         if ((element === undefined || element === null) && process_connection !== null) {
             let arr = [];
-            for (var w in windows) if (windows[w].isMonitor) arr.push(windows[w].title);
+            for (var w in windows) if (windows[w].isMonitor) arr.push(windows[w].term.title);
             return arr;
         }
         else return null;
@@ -102,6 +102,15 @@ function getSetting(name) {
     else if (os.platform() === "win32") return config.get("windows").replace(/%([^%]+)%/g, (_, n) => process.env[n] || ('%' + n + '%'));
     else if (os.platform() === "darwin") return config.get("mac").replace(/\$(\w+)/g, (_, n) => process.env[n] || ('$' + n)).replace(/\${([^}]+)}/g, (_, n) => process.env[n] || ('${' + n + '}'));
     else if (os.platform() === "linux") return config.get("linux").replace(/\$(\w+)/g, (_, n) => process.env[n] || ('$' + n)).replace(/\${([^}]+)}/g, (_, n) => process.env[n] || ('${' + n + '}'));
+    else return null;
+}
+
+function getDataPath() {
+    let config = vscode.workspace.getConfiguration("craftos-pc");
+    if (config.get("dataPath") !== null) return config.get("dataPath");
+    else if (os.platform() === "win32") return "%appdata%\\CraftOS-PC".replace(/%([^%]+)%/g, (_, n) => process.env[n] || ('%' + n + '%'));
+    else if (os.platform() === "darwin") return "$HOME/Library/Application Support/CraftOS-PC".replace(/\$(\w+)/g, (_, n) => process.env[n] || ('$' + n)).replace(/\${([^}]+)}/g, (_, n) => process.env[n] || ('${' + n + '}'))
+    else if (os.platform() === "linux") return "$HOME/.local/craftos-pc".replace(/\$(\w+)/g, (_, n) => process.env[n] || ('$' + n)).replace(/\${([^}]+)}/g, (_, n) => process.env[n] || ('${' + n + '}'))
     else return null;
 }
 
@@ -145,7 +154,6 @@ function connectToProcess() {
         // assuming line buffering, hopefully this will always be the case
         if (chunk.subarray(0, 4).toString() != "!CPC") console.log("Invalid message");
         else {
-            console.log("Render");
             var size = parseInt(chunk.subarray(4, 8).toString(), 16);
             var data = Buffer.from(chunk.subarray(8, size + 8).toString(), 'base64');
             var good_checksum = parseInt(chunk.subarray(size + 8, size + 16).toString(), 16);
@@ -231,7 +239,8 @@ function connectToProcess() {
                 }
                 
             } else if (type == 4) {
-                if (stream.get() == 2) {
+                var type2 = stream.get();
+                if (type2 == 2) {
                     if (process_connection.connected) {
                         process_connection.stdin.write("\n", "utf8");
                         process_connection.disconnect();
@@ -241,17 +250,23 @@ function connectToProcess() {
                     }
                     for (var w in windows) if (windows[w].panel !== undefined) windows[w].panel.dispose();
                     windows = {};
+                    computer_provider._onDidChangeTreeData.fire();
+                    monitor_provider._onDidChangeTreeData.fire();
                     return;
-                } else if (stream.get() == 1) {
+                } else if (type2 == 1) {
                     if (windows[id].panel !== undefined) windows[id].panel.dispose();
                     delete windows[id];
+                    computer_provider._onDidChangeTreeData.fire();
+                    monitor_provider._onDidChangeTreeData.fire();
                     return;
-                } else {
+                } else if (type2 == 0) {
                     stream.get();
                     term.width = stream.readUInt16();
                     term.height = stream.readUInt16();
                     term.title = "";
                     for (var c = stream.get(); c != 0; c = stream.get()) term.title += String.fromCharCode(c);
+                    console.log(term.title);
+                    if (windows[id] !== undefined) windows[id].isMonitor = typeof term.title === "string" && term.title.indexOf("Monitor") !== -1;
                 }
             } else if (type == 5) {
                 var flags = stream.readUInt32();
@@ -265,16 +280,17 @@ function connectToProcess() {
                     case 0x40: vscode.window.showInformationMessage("CraftOS-PC: " + title + ": " + message); break;
                 }
             }
-            if (windows[id] === undefined) {
-                windows[id] = {};
-                computer_provider._onDidChangeTreeData.fire();
-                monitor_provider._onDidChangeTreeData.fire();
-            }
-            windows[id].term = term;
-            windows[id].isWindow = typeof term.title === "string" && term.title.indexOf("Monitor") !== -1;
+            if (windows[id] === undefined) windows[id] = {};
+            if (windows[id].term === undefined) windows[id].term = {};
+            for (var k in term) windows[id].term[k] = term[k];
+            if (windows[id].isMonitor === undefined) windows[id].isMonitor = typeof windows[id].term.title === "string" && windows[id].term.title.indexOf("Monitor") !== -1;
             if (windows[id].panel !== undefined) {
                 windows[id].panel.webview.postMessage(windows[id].term);
                 windows[id].panel.title = term.title || "CraftOS-PC Terminal";
+            }
+            if (type == 4) {
+                computer_provider._onDidChangeTreeData.fire();
+                monitor_provider._onDidChangeTreeData.fire();
             }
         }
     });
@@ -335,11 +351,30 @@ function activate(context) {
     });
 
     let disposable2 = vscode.commands.registerCommand('craftos-pc.open-window', function () {
-        vscode.window.showInputBox({"prompt": "Enter the window ID:", "validateInput": str => isNaN(parseInt(str)) ? "Invalid number" : null}).then(value => openPanel(parseInt(value)));
+        vscode.window.showInputBox({prompt: "Enter the window ID:", validateInput: str => isNaN(parseInt(str)) ? "Invalid number" : null}).then(value => openPanel(parseInt(value)));
     });
 
     context.subscriptions.push(disposable);
     context.subscriptions.push(disposable2);
+
+    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-config', function() {
+        if (getDataPath() == null) {
+            vscode.window.showErrorMessage("Please set the path to the CraftOS-PC data directory manually.");
+            return;
+        }
+        vscode.commands.executeCommand("vscode.open", vscode.Uri.file(getDataPath() + "/config/global.json"));
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-computer-data', function() {
+        if (getDataPath() == null) {
+            vscode.window.showErrorMessage("Please set the path to the CraftOS-PC data directory manually.");
+            return;
+        }
+        vscode.window.showInputBox({prompt: "Enter the computer ID:", validateInput: str => isNaN(parseInt(str)) ? "Invalid number" : null}).then(value => {
+            if (!fs.existsSync(getDataPath() + "/computer/" + value)) vscode.window.showErrorMessage("The computer ID provided does not exist.");
+            else vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(getDataPath() + "/computer/" + value));
+        })
+    }));
 
     computer_tree = vscode.window.createTreeView("craftos-computers", {"treeDataProvider": computer_provider});
     monitor_tree = vscode.window.createTreeView("craftos-monitors", {"treeDataProvider": monitor_provider});

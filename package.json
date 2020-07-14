@@ -17,8 +17,7 @@
 	],
 	"publisher": "JackMacWindows",
 	"activationEvents": [
-		"onCommand:craftos-pc.open",
-		"onView:craftos-terminals"
+		"onStartupFinished"
 	],
 	"main": "./extension.js",
 	"contributes": {
@@ -30,6 +29,14 @@
 			{
 				"command": "craftos-pc.open-window",
 				"title": "CraftOS-PC: Open Window With ID"
+			},
+			{
+				"command": "craftos-pc.open-computer-data",
+				"title": "CraftOS-PC: Open Data Directory for Computer..."
+			},
+			{
+				"command": "craftos-pc.open-config",
+				"title": "CraftOS-PC: Open Configuration"
 			}
 		],
 		"viewsContainers": {
@@ -90,7 +97,7 @@
 		},
 		"viewsWelcome": [
 			{
-				"view": "craftos-terminals",
+				"view": "craftos-computers",
 				"contents": "You must start CraftOS-PC before using this tab.\n[Start CraftOS-PC](command:craftos-pc.open)"
 			}
 		]
