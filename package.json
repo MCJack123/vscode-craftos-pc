@@ -1,0 +1,114 @@
+{
+	"name": "craftos-pc",
+	"displayName": "CraftOS-PC for VS Code",
+	"description": "Adds the ability to open CraftOS-PC windows inside VS Code, as well as some ease-of-use functionality to make programming easier.",
+	"version": "0.0.1",
+	"engines": {
+		"vscode": "^1.41.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"keywords": [
+		"computercraft",
+		"craftos",
+		"terminal",
+		"craftos-pc"
+	],
+	"publisher": "JackMacWindows",
+	"activationEvents": [
+		"onCommand:craftos-pc.open",
+		"onView:craftos-terminals"
+	],
+	"main": "./extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "craftos-pc.open",
+				"title": "CraftOS-PC: Start Session"
+			},
+			{
+				"command": "craftos-pc.open-window",
+				"title": "CraftOS-PC: Open Window With ID"
+			}
+		],
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "craftos-terminals",
+					"title": "CraftOS Terminals",
+					"icon": "media/sidebar-icon.svg"
+				}
+			]
+		},
+		"views": {
+			"craftos-terminals": [
+				{
+					"id": "craftos-computers",
+					"name": "Computers"
+				},
+				{
+					"id": "craftos-monitors",
+					"name": "Monitors"
+				}
+			]
+		},
+		"configuration": {
+			"title": "CraftOS-PC",
+			"properties": {
+				"craftos-pc.executablePath.windows": {
+					"type": "string",
+					"default": "C:\\Program Files\\CraftOS-PC\\CraftOS-PC_console.exe",
+					"description": "The path to the CraftOS-PC executable on Windows. Must be the console version.",
+					"scope": "machine-overridable"
+				},
+				"craftos-pc.executablePath.mac": {
+					"type": "string",
+					"default": "/Applications/CraftOS-PC.app/Contents/MacOS/craftos",
+					"description": "The path to the CraftOS-PC executable (NOT the application) on macOS.",
+					"scope": "machine-overridable"
+				},
+				"craftos-pc.executablePath.linux": {
+					"type": "string",
+					"default": "/usr/bin/craftos",
+					"description": "The path to the CraftOS-PC executable on Linux.",
+					"scope": "machine-overridable"
+				},
+				"craftos-pc.executablePath.all": {
+					"type": "string",
+					"default": null,
+					"description": "The path to the CraftOS-PC executable. Overrides any platform defaults if set.",
+					"scope": "machine-overridable"
+				},
+				"craftos-pc.dataPath": {
+					"type": "string",
+					"default": null,
+					"description": "The path to the data directory to use for CraftOS-PC. This defaults to the standard data directory location. The path is relative to the workspace directory.",
+					"scope": "window"
+				}
+			}
+		},
+		"viewsWelcome": [
+			{
+				"view": "craftos-terminals",
+				"contents": "You must start CraftOS-PC before using this tab.\n[Start CraftOS-PC](command:craftos-pc.open)"
+			}
+		]
+	},
+	"scripts": {
+		"lint": "eslint .",
+		"pretest": "npm run lint",
+		"test": "node ./test/runTest.js"
+	},
+	"devDependencies": {
+		"@types/glob": "^7.1.1",
+		"@types/mocha": "^7.0.1",
+		"@types/node": "^12.11.7",
+		"@types/vscode": "^1.41.0",
+		"eslint": "^6.8.0",
+		"glob": "^7.1.6",
+		"mocha": "^7.0.1",
+		"typescript": "^3.7.5",
+		"vscode-test": "^1.3.0"
+	}
+}

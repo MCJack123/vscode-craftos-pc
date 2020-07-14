@@ -1,0 +1,249 @@
+<html>
+    <head>
+        <title>CraftOS-PC v2.3</title>
+        <meta charset="utf-8">
+        <style>
+            #textmode {
+                font-family: 'Courier New', Courier, monospace;
+            }
+            #terminal {
+                /*border: 10px solid #DEDE6C;
+                border-radius: 5px;*/
+            }
+            .main-container {
+                line-height: 12px;
+            }
+            .main-container br {
+                height: 0;
+                padding: 0;
+                margin: 0;
+                line-height: 12px;
+            }
+            .border-left, .border-right, .border-top, .border-bottom, .border-top-right, .border-top-left, .border-bottom-left, .border-bottom-right {
+                background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAYAAABccqhmAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3wQCDTMCYoj9XgAAA2pJREFUeNrt3T1OAkEYgOFvDTeZyDHo4BiUegC4hq0GSo5gKVYbPQMGM9giHmItDIlaSNT1B+Z5Ogo3kzH7ZnaZXaqUUhNAkaqH1YUAQKGOTAGUq7PeLMwCWAEAAgAIACAAgAAAAgAclE5dL80CFKqyFRhcAgAlrgA8CwAF3wOwFRhcAgACAAgAIACAAAACABwaW4HBCgAokWcBAAAAAODAVSml5no+joiIj54MrOtlTCf3kXOuIiLavHm4Peb2uNfz8c6xRMSb8QCf1/ni3zXzq1Frg+gPzhonMvy+r+wDaFb5vNVBzK9G4etI2IMVQErpzefHp7tvD6Kul3FyehzTSYgA/PMVQKsnP7CnAQAEABAAQAAAAQD+v85PHfj9i0Z6va7ZhlICEPGyVTciYtfWXsAlAHBIK4DtQ0ZAYQHo9bqW/eASABAAQAAAAQAEACg6AH6aDP7Op78GzDlX/cFZM5vN4ub20gxCaSuAnHM1HA5bHYg3/MIerABeR6DNd/g5+WGPAuCkhUIvAQABAAQAEACgiAC48QdWAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACAAgAIAAAAIACABQQAD8UAlYAQACAAgAIACAAAACAAgAIAAgAKYABAAQAEAAAAEABAAQAEAAAAEABAAQAEAAAAEABAAQAEAAAAEABAAQAEAAAAEABAAQAEAAAAEABAAQAEAAAAEABAAQAEAAAAEABAAQAEAAAAEAAQAEABAAQAAAAQAEABAAQAAAAQAEABAAQAAAAQAEABAAQAAAAQAEABAAQAAAAQAEABAAQAAAAQAEABAAQAAAAQAEABAAQAAAAQAEABAAQAAAAQABAAQAEABAAAABAAQAEABAAAABAAQAEABAAAABAAQAEABAAAABAAQAEABAAAABAAQAEABAAAABAAQAEABAAAABAAQAEABAAAABAAQAEABAAAABAAEABAAQAEAAAAEABAAQAEAAAAEABAAQAEAAAAEABAAQAEAAAAEABKA1jX8jWAEAAgAIACAAgAAAAgAIACAAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACAAgAIACAAAACALQVgNVDN9abhdmAwjwDx3yAV9Yqo3UAAAAASUVORK5CYII=");
+                background-repeat: no-repeat;
+                display: inline-block;
+                line-height: 1;
+                padding: 0;
+                margin: 0;
+            }
+            .border-left {
+                width: 12px;
+                height: 234px;
+                background-position: 0px -28px;
+                transform: scaleY(calc(352 / 227)) translateY(-34px);
+            }
+            .border-right {
+                width: 12px;
+                height: 234px;
+                background-position: -36px -28px;
+                transform: scaleY(calc(352 / 227)) translateY(-34px) translateX(-1px);
+            }
+            .border-top {
+                width: 256px;
+                height: 12px;
+                background-position: 0px 0px;
+                transform: scaleX(calc(620 / 256)) translateX(75px);
+            }
+            .border-bottom {
+                width: 256px;
+                height: 12px;
+                background-position: 0px -12px;
+                transform: scaleX(calc(620 / 256)) translateX(75px);
+            }
+            .border-top-left {
+                width: 12px;
+                height: 12px;
+                background-position: -12px -28px;
+            }
+            .border-top-right {
+                width: 12px;
+                height: 12px;
+                background-position: -24px -28px;
+                transform: translateX(363px);
+            }
+            .border-bottom-left {
+                width: 12px;
+                height: 12px;
+                background-position: -12px -40px;
+            }
+            .border-bottom-right {
+                width: 12px;
+                height: 12px;
+                background-position: -24px -40px;
+                transform: translateX(363px);
+            }
+        </style>
+        <script>
+            var keymap = {
+                '1': 2,
+                '2': 3,
+                '3': 4,
+                '4': 5,
+                '5': 6,
+                '6': 7,
+                '7': 8,
+                '8': 9,
+                '9': 1,
+                '0': 11,
+                '-': 12,
+                '=': 13,
+                "Backspace": 14,
+                'Tab': 15,
+                'q': 16,
+                'w': 17,
+                'e': 18,
+                'r': 19,
+                't': 20,
+                'y': 21,
+                'u': 22,
+                'i': 23,
+                'o': 24,
+                'p': 25,
+                '[': 26,
+                ']': 27,
+                'Enter': 28,
+                'a': 30,
+                's': 31,
+                'd': 32,
+                'f': 33,
+                'g': 34,
+                'h': 35,
+                'j': 36,
+                'k': 37,
+                'l': 38,
+                ';': 39,
+                '\'': 40,
+                '\\': 43,
+                'z': 44,
+                'x': 45,
+                'c': 46,
+                'v': 47,
+                'b': 48,
+                'n': 49,
+                'm': 50,
+                ',': 51,
+                '.': 52,
+                '/': 53,
+                ' ': 57,
+                "F1": 59,
+                "F2": 60,
+                "F3": 61,
+                "F4": 62,
+                "F5": 63,
+                "F6": 64,
+                "F7": 65,
+                "F8": 66,
+                "F9": 67,
+                "F10": 68,
+                "F11": 87,
+                "F12": 88,
+                "F13": 100,
+                "F14": 101,
+                "F15": 102,
+                "ArrowUp": 200,
+                "ArrowLeft": 203,
+                "ArrowRight": 205,
+                "ArrowDown": 208,
+                "Home": 199,
+                "End": 207,
+                "Control": 29,
+                "Alt": 56,
+                "Shift": 42,
+                "Delete": 211
+            };
+        </script>
+        <script>
+            const vscode = acquireVsCodeApi();
+            function abspos(x, y, width) {return (y * width + x) * 4;}
+            function setpx(data, x, y, c) {
+                data.data[abspos(x, y, data.width)] = c.r;
+                data.data[abspos(x, y, data.width) + 1] = c.g;
+                data.data[abspos(x, y, data.width) + 2] = c.b;
+                data.data[abspos(x, y, data.width) + 3] = 255;
+            }
+            function drawChar(data, c, x, y, fg, bg) {
+                var srcrect = {
+                    width: 6,
+                    height: 9,
+                    x: ((6 + 2))*(c & 0x0F),
+                    y: ((9 + 2))*(c >> 4),
+                };
+                var destrect = {
+                    x: x * 12, 
+                    y: y * 18, 
+                    width: 12, 
+                    height: 18
+                };
+                var font = document.getElementById("font").getContext("2d").getImageData(0, 0, 128, 175);
+                for (var yy = 0; yy < 9; yy++) {
+                    for (var xx = 0; xx < 6; xx++) {
+                        var c = font.data[abspos(srcrect.x + xx, srcrect.y + yy, font.width) + 3] > 127 ? fg : bg;
+                        setpx(data, destrect.x + (xx * 2), destrect.y + (yy * 2), c);
+                        setpx(data, destrect.x + (xx * 2) + 1, destrect.y + (yy * 2), c);
+                        setpx(data, destrect.x + (xx * 2), destrect.y + (yy * 2) + 1, c);
+                        setpx(data, destrect.x + (xx * 2) + 1, destrect.y + (yy * 2) + 1, c);
+                    }
+                }
+            }
+            function render(term) {
+                if (term === undefined || term === null || term.palette === undefined) return;
+                var ctx = document.getElementById("terminal").getContext("2d");
+                ctx.fillStyle = "#" + term.palette[15].r.toString(16) + term.palette[15].g.toString(16) + term.palette[15].b.toString(16);
+                ctx.fillRect(0, 0, term.width * 12 + 8, term.height * 18 + 8);
+                var data = ctx.createImageData(term.width * 12, term.height * 18);
+                if (term.mode == 0) {
+                    for (var y = 0; y < term.height; y++) {
+                        for (var x = 0; x < term.width; x++) {
+                            drawChar(data, term.screen[y][x], x, y, term.palette[term.colors[y][x] & 0x0f], term.palette[term.colors[y][x] >> 4]);
+                        }
+                    }
+                    if (term.blink) {
+                        drawChar(data, "_".charCodeAt(0), term.cursorX, term.cursorY, term.palette[term.colors[term.cursorY][term.cursorX] & 0x0f], term.palette[term.colors[term.cursorY][term.cursorX] >> 4]);
+                    }
+                }
+                ctx.putImageData(data, 4, 4);
+            }
+            function sendPacket(type, extra) {
+                vscode.postMessage({type: type, data: extra});
+            }
+            var events = {}
+            events.key = function(e) {
+                if (keymap[e.key] != null) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    sendPacket(1, ("0" + keymap[e.key].toString(16)).slice(-2) + "01");
+                    if (e.key.length == 1) sendPacket(1, ("0" + e.key.charCodeAt(0).toString(16)).slice(-2) + "09");
+                    return false;
+                } else return true;
+            }
+            events.key_up = function(e) {
+                if (keymap[e.key] != null) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    sendPacket(1, ("0" + keymap[e.key].toString(16)).slice(-2) + "00");
+                    return false;
+                } else return true;
+            }
+            window.addEventListener("message", (ev) => render(ev.data));
+        </script>
+    </head>
+    <body>
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACvAgMAAABIqj67AAAACVBMVEUAYHMAAAD///+OtqXfAAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAADsMAAA7DAcdvqGQAAASsSURBVFjDzVhBciMhDFRxoniFitPUvJJjnsExlVeuuiUx2HE2OWzsZTZrZtwjUNMIySLftzbawGfh3fmeTxdA9Zx1FHtUFqBMVQPNhrtjdoM0h4zj4FsEVK01LOTVplYOoJuFrkoLO0A5ryph4eAAvGII5XwO4R28KMsbn2SjFwG4belmkee2YpSYz1Pck9svjQ9to2rXy6MEFTmnnMa7rYUBOpy0PthoAqJBfjyyIUiuv41ncJjMwAIAxSCwgK9hQfESCMQcgC8qNs1YU7Oi4vAQByyco81rgnhpc3MRPeUlzaalEK0aMTLMlzuiA2BiG3XIIOia9vClMj0alP6bCBUk3wCMdy4SuASgDFI9w1Jx/03OfcidhZqWbBBjU330IcFncYAPAS8wRHrhAP2b889rLhGTFqQ3sIkjdJAT69vc7c/WwSRZ2cOapLP2UCd1Z+ScA/JLACVv71t0gMzLAPa0xbIh5uJQDXKoLxDIxrsALh6oaj7EY03A8DmEpiP0DGzA8MhXgl6U/4FoBksTC/4iTirpDbfQr5pNeCl9N1aPeeBhf7M3B744LRQoo4XRRo67AzQNiptNC9ZFSO/vDwFJbT7c+079AmDe6YXdDSXliP/hxf/QfIJt+qS8QR8ap2A6KeGchZIK/iFD9GDB3Sw3kncAgnOQI3pZ8DjjO+MOUEenDX//AowkuI5jsncLaKTUg7hDU+U/IWE+J1J7QOZ/Ex9Q1LbpdsDq3+xKo7kjKkBJti86tzxi7cH9wnehf3WK9KBoQXj3VRSqkvtilqVqhIAFuFRdCHbSc/Fo4Rw+vu8IAlTGQ1Wf4y7JevLheNNswpYq1apfAFy6Rt6wg6xZ7oFAtO+LFc6rhWJFqNn2BWJtzVAaUWDpsasf0WnBhsC2wzGQsschXWUbgmeE8CCYvhaM/PTCh5D7w/HciNbvSC/1Jxx+2L+P9/j8+Pz5DEDOxK/sZPuHgNe2R/6fn4j6XcCvU/3d9QzAD0NHGZ5R2b4cIu3+vEB94bGRZcyMw0hafm3lAxOuwrxY3ywYcL/2twDg5GQIxkaXXpGjI+W5AMwkYaERYPGfe74fy0KNuMIj5Q1pNONCXXM4o6BEbGhe8VyTjJNGXyf6xpPuYJK7pbuMmn5+DU8HlPWzsBRuDKHqGYhyBQ6+4wBw0pkeHDgimyAD8/K6aRkOqFF1RgGSFgoBJ3vVatA6dT8p8HgVh8MA9ndD3/lGALXQI5vk+ZdZhn6XUf/aYhyorDBrJErWy/uGqkNq5FJgLuYumzb4NTLYvAwg68eOeHZlD0ptS14lfwe4fiAxmXMD+LUAu4WOtPnewg1gyvg0h1eWLtdBXPSiG8QdzD8qSnRzl/rzeoBOemoVa+CFXTQHVaQlBDFpszTQMpBjYyIzuMiwPcnrG8AS5w3sRabq1Iet+BzOKFqS2KuPwNK/SzCeE1V2Ve/3D1WdueiXqq7zcnlJTi4ha6/X2iwAsuG8UEqlJn+u6t1CfZeR/fLoB7RXqRp07qp2skPV5HL0je71G9D1u2sUD5uidlVvss+Ue1do0U8AkV3jDywUuWTvafQqxTdVB9msF/Wv2/o2x/6i/QF9P1+5ZJA2agAAAABJRU5ErkJggg==" style="display: none" id="font_img">
+        <canvas width=128 height=175 id="font" style="display: none"></canvas>
+        <br>
+        <div style="position: absolute" class="main-container">
+            <div class="border-top-left"></div><div class="border-top"></div><div class="border-top-right"></div><br>
+            <div class="border-left"></div><canvas id="terminal" width=620px height=350px></canvas><div class="border-right"></div><br>
+            <div class="border-bottom-left"></div><div class="border-bottom"></div><div class="border-bottom-right"></div>
+        </div><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
+        <script>
+            var ctx = document.getElementById("terminal").getContext("2d");
+            ctx.fillStyle = "#191919";
+            ctx.fillRect(0, 0, 620, 350);
+            document.getElementById("font_img").onload = function() {document.getElementById("font").getContext("2d").drawImage(document.getElementById("font_img"), 0, 0);}
+            document.addEventListener("keydown", events.key);
+            document.addEventListener("keyup", events.key_up);
+        </script>
+    </body>
+</html>
