@@ -19,6 +19,7 @@
 	"publisher": "JackMacWindows",
 	"preview": true,
 	"repository": {"type": "git", "url": "https://github.com/MCJack123/vscode-craftos-pc"},
+	"icon": "media/icon.png",
 	"activationEvents": [
 		"onStartupFinished"
 	],
