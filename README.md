@@ -35,7 +35,7 @@ This extension contributes the following settings:
 
 * Switching to another tab and back may cause keyboard input to stop working.
   * Workaround: Switch windows and back to make the keyboard work again.
-* There may be some latency in 
+* There may be some latency when typing things into the terminal.
 
 ## Release Notes
 
