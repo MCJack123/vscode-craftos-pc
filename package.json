@@ -1,7 +1,7 @@
 {
 	"name": "craftos-pc",
 	"displayName": "CraftOS-PC for VS Code",
-	"description": "Adds the ability to open CraftOS-PC windows inside VS Code, as well as some ease-of-use functionality to make programming easier.",
+	"description": "Adds the ability to open CraftOS-PC windows inside VS Code, as well as some ease-of-use functionality to make ComputerCraft programming easier.",
 	"version": "0.1.0",
 	"engines": {
 		"vscode": "^1.41.0"
@@ -15,7 +15,10 @@
 		"terminal",
 		"craftos-pc"
 	],
+	"author": {"name": "JackMacWindows"},
 	"publisher": "JackMacWindows",
+	"preview": true,
+	"repository": {"type": "git", "url": "https://github.com/MCJack123/vscode-craftos-pc"},
 	"activationEvents": [
 		"onStartupFinished"
 	],

@@ -72,7 +72,9 @@ var computer_provider = {
         else return null;
     },
     getTreeItem: function(element) {
-        return new vscode.TreeItem(element.title);
+        var r = new vscode.TreeItem(element.title);
+        r.iconPath = vscode.Uri.file(path.join(extcontext.extensionPath, 'media/computer.svg'));
+        return r;
     },
     _onDidChangeTreeData: new vscode.EventEmitter(),
 };
@@ -88,7 +90,9 @@ var monitor_provider = {
         else return null;
     },
     getTreeItem: function(element) {
-        return new vscode.TreeItem(element.title);
+        var r = new vscode.TreeItem(element.title);
+        r.iconPath = vscode.Uri.file(path.join(extcontext.extensionPath, 'media/computer.svg'));
+        return r;
     },
     _onDidChangeTreeData: new vscode.EventEmitter(),
 }
