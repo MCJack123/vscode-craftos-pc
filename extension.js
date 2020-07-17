@@ -66,13 +66,13 @@ var computer_provider = {
     getChildren: function(element) {
         if ((element === undefined || element === null) && process_connection !== null) {
             let arr = [];
-            for (var w in windows) if (!windows[w].isMonitor) arr.push(windows[w].term.title);
+            for (var w in windows) if (!windows[w].isMonitor) arr.push({title: windows[w].term.title, id: w});
             return arr;
         }
         else return null;
     },
     getTreeItem: function(element) {
-        return new vscode.TreeItem(element);
+        return new vscode.TreeItem(element.title);
     },
     _onDidChangeTreeData: new vscode.EventEmitter(),
 };
@@ -82,19 +82,20 @@ var monitor_provider = {
     getChildren: function(element) {
         if ((element === undefined || element === null) && process_connection !== null) {
             let arr = [];
-            for (var w in windows) if (windows[w].isMonitor) arr.push(windows[w].term.title);
+            for (var w in windows) if (windows[w].isMonitor) arr.push({title: windows[w].term.title, id: w});
             return arr;
         }
         else return null;
     },
     getTreeItem: function(element) {
-        return new vscode.TreeItem(element);
+        return new vscode.TreeItem(element.title);
     },
     _onDidChangeTreeData: new vscode.EventEmitter(),
 }
 monitor_provider.onDidChangeTreeData = monitor_provider._onDidChangeTreeData.event;
 
 var process_connection = null;
+var data_continuation = null;
 
 function getSetting(name) {
     let config = vscode.workspace.getConfiguration(name);
@@ -114,6 +115,13 @@ function getDataPath() {
     else return null;
 }
 
+function closeAllWindows() {
+    for (var k in windows) if (windows[k].panel !== undefined) windows[k].panel.dispose();
+    windows = {};
+    computer_provider._onDidChangeTreeData.fire(null);
+    monitor_provider._onDidChangeTreeData.fire(null);
+}
+
 function connectToProcess() {
     if (process_connection !== null) return true;
     let exe_path = getSetting("craftos-pc.executablePath");
@@ -131,30 +139,41 @@ function connectToProcess() {
         else process_connection = child_process.spawn(exe_path, ["--raw", "-d", dir], process_options);
     } catch (e) {
         vscode.window.showErrorMessage("The CraftOS-PC worker process could not be launched. Check the path to the executable in the settings.");
-        console.log(e);
+        console.error(e);
         return;
     }
     process_connection.on("error", () => {
         vscode.window.showErrorMessage("The CraftOS-PC worker process could not be launched. Check the path to the executable in the settings.");
         process_connection = null;
+        closeAllWindows();
     });
     process_connection.on("exit", (code) => {
         vscode.window.showInformationMessage(`The CraftOS-PC worker process exited with code ${code}.`)
         process_connection = null;
+        closeAllWindows();
     });
     process_connection.on("disconnect", () => {
         vscode.window.showErrorMessage(`The CraftOS-PC worker process was disconnected from the window.`)
         process_connection = null;
+        closeAllWindows();
     });
     process_connection.on("close", (code) => {
         vscode.window.showInformationMessage(`The CraftOS-PC worker process closed all IO streams with code ${code}.`)
         process_connection = null;
+        closeAllWindows();
     });
     process_connection.stdout.on("data", (chunk) => {
-        // assuming line buffering, hopefully this will always be the case
-        if (chunk.subarray(0, 4).toString() != "!CPC") console.log("Invalid message");
+        if (data_continuation !== null) {
+            chunk = Buffer.concat([data_continuation, chunk]);
+            data_continuation = null;
+        }
+        if (chunk.subarray(0, 4).toString() != "!CPC") console.error("Invalid message");
         else {
             var size = parseInt(chunk.subarray(4, 8).toString(), 16);
+            if (size > chunk.length + 16) {
+                data_continuation = chunk;
+                return;
+            }
             var data = Buffer.from(chunk.subarray(8, size + 8).toString(), 'base64');
             var good_checksum = parseInt(chunk.subarray(size + 8, size + 16).toString(), 16);
             var data_checksum = crc32(chunk.subarray(8, size + 8).toString());
@@ -204,7 +223,7 @@ function connectToProcess() {
                     }
                     stream.putback();
                     stream.putback();
-                } else {
+                } else if (term.mode == 1 || term.mode == 2) {
                     var c = stream.get();
                     var n = stream.get();
                     for (var y = 0; y < term.height * 9; y++) {
@@ -222,14 +241,14 @@ function connectToProcess() {
                     stream.putback();
                 }
                 term.palette = {}
-                if (term.mode != 2) {
+                if (term.mode == 0 || term.mode == 1) {
                     for (var i = 0; i < 16; i++) {
                         term.palette[i] = {}
                         term.palette[i].r = stream.get();
                         term.palette[i].g = stream.get();
                         term.palette[i].b = stream.get();
                     }
-                } else {
+                } else if (term.mode == 2) {
                     for (var i = 0; i < 256; i++) {
                         term.palette[i] = {}
                         term.palette[i].r = stream.get();
@@ -237,7 +256,6 @@ function connectToProcess() {
                         term.palette[i].b = stream.get();
                     }
                 }
-                
             } else if (type == 4) {
                 var type2 = stream.get();
                 if (type2 == 2) {
@@ -248,16 +266,13 @@ function connectToProcess() {
                         process_connection.kill(SIGINT);
                         vscode.window.showWarningMessage("The CraftOS-PC worker process did not close correctly. Some changes may not have been saved.")
                     }
-                    for (var w in windows) if (windows[w].panel !== undefined) windows[w].panel.dispose();
-                    windows = {};
-                    computer_provider._onDidChangeTreeData.fire();
-                    monitor_provider._onDidChangeTreeData.fire();
+                    closeAllWindows();
                     return;
                 } else if (type2 == 1) {
                     if (windows[id].panel !== undefined) windows[id].panel.dispose();
                     delete windows[id];
-                    computer_provider._onDidChangeTreeData.fire();
-                    monitor_provider._onDidChangeTreeData.fire();
+                    computer_provider._onDidChangeTreeData.fire(null);
+                    monitor_provider._onDidChangeTreeData.fire(null);
                     return;
                 } else if (type2 == 0) {
                     stream.get();
@@ -265,7 +280,6 @@ function connectToProcess() {
                     term.height = stream.readUInt16();
                     term.title = "";
                     for (var c = stream.get(); c != 0; c = stream.get()) term.title += String.fromCharCode(c);
-                    console.log(term.title);
                     if (windows[id] !== undefined) windows[id].isMonitor = typeof term.title === "string" && term.title.indexOf("Monitor") !== -1;
                 }
             } else if (type == 5) {
@@ -286,16 +300,16 @@ function connectToProcess() {
             if (windows[id].isMonitor === undefined) windows[id].isMonitor = typeof windows[id].term.title === "string" && windows[id].term.title.indexOf("Monitor") !== -1;
             if (windows[id].panel !== undefined) {
                 windows[id].panel.webview.postMessage(windows[id].term);
-                windows[id].panel.title = term.title || "CraftOS-PC Terminal";
+                windows[id].panel.title = windows[id].term.title || "CraftOS-PC Terminal";
             }
             if (type == 4) {
-                computer_provider._onDidChangeTreeData.fire();
-                monitor_provider._onDidChangeTreeData.fire();
+                computer_provider._onDidChangeTreeData.fire(null);
+                monitor_provider._onDidChangeTreeData.fire(null);
             }
         }
     });
     process_connection.stderr.on('data', data => {
-        console.log(data.toString());
+        console.error(data.toString());
     })
     vscode.window.showInformationMessage("A new CraftOS-PC worker process has been started.");
     openPanel(0, true);
@@ -304,19 +318,22 @@ function connectToProcess() {
 //var packet = "!CPC" + ("000" + b64.length.toString(16)).slice(-4) + b64 + ("0000000" + crc32(b64).toString(16)).slice(-8) + "\n";
 function openPanel(id, force) {
     if (!force && (extcontext === null || windows[id] === undefined)) return;
+    if (windows[id] !== undefined && windows[id].panel !== undefined) {
+        windows[id].panel.reveal();
+        return;
+    }
     const panel = vscode.window.createWebviewPanel(
         'craftos-pc',
         'CraftOS-PC Terminal',
-        vscode.ViewColumn.One,
+        vscode.window.activeTextEditor && vscode.window.activeTextEditor.viewColumn || vscode.ViewColumn.One,
         {
-            enableScripts: true
+            enableScripts: true,
+            retainContextWhenHidden: true
         }
     );
     // Get path to resource on disk
-    const onDiskPath = vscode.Uri.file(
-        path.join(extcontext.extensionPath, 'index.html')
-    );
-    
+    const onDiskPath = vscode.Uri.file(path.join(extcontext.extensionPath, 'index.html'));
+    panel.iconPath = vscode.Uri.file(path.join(extcontext.extensionPath, 'media/computer.svg'));
     panel.webview.html = fs.readFileSync(onDiskPath.fsPath, 'utf8');
     panel.webview.onDidReceiveMessage(message => {
         if (typeof message !== "object" || process_connection === null) return;
@@ -328,8 +345,19 @@ function openPanel(id, force) {
         var packet = "!CPC" + ("000" + b64.length.toString(16)).slice(-4) + b64 + ("0000000" + crc32(b64).toString(16)).slice(-8) + "\n";
         process_connection.stdin.write(packet, 'utf8');
     });
+    panel.onDidChangeViewState(e => {
+        if (e.webviewPanel.active && windows[id].term !== undefined) {
+            e.webviewPanel.webview.postMessage(windows[id].term);
+            e.webviewPanel.title = windows[id].term.title || "CraftOS-PC Terminal";
+        }
+    });
+    panel.onDidDispose(() => {if (windows[id].panel !== undefined) delete windows[id].panel;});
     if (windows[id] === undefined) windows[id] = {};
     windows[id].panel = panel;
+    if (windows[id].term !== undefined) {
+        windows[id].panel.webview.postMessage(windows[id].term);
+        windows[id].panel.title = windows[id].term.title || "CraftOS-PC Terminal";
+    }
 }
 
 /**
@@ -378,6 +406,8 @@ function activate(context) {
 
     computer_tree = vscode.window.createTreeView("craftos-computers", {"treeDataProvider": computer_provider});
     monitor_tree = vscode.window.createTreeView("craftos-monitors", {"treeDataProvider": monitor_provider});
+    computer_tree.onDidChangeSelection(e => {for (var a in e.selection) openPanel(e.selection[a].id);});
+    monitor_tree.onDidChangeSelection(e => {for (var a in e.selection) openPanel(e.selection[a].id);});
 }
 exports.activate = activate;
 

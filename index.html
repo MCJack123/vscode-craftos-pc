@@ -6,10 +6,6 @@
             #textmode {
                 font-family: 'Courier New', Courier, monospace;
             }
-            #terminal {
-                /*border: 10px solid #DEDE6C;
-                border-radius: 5px;*/
-            }
             .main-container {
                 line-height: 12px;
             }
@@ -76,55 +72,55 @@
         </style>
         <script>
             var keymap = {
-                '1': 2,
-                '2': 3,
-                '3': 4,
-                '4': 5,
-                '5': 6,
-                '6': 7,
-                '7': 8,
-                '8': 9,
-                '9': 1,
-                '0': 11,
-                '-': 12,
-                '=': 13,
+                '1': 2, '!': 2,
+                '2': 3, '@': 3,
+                '3': 4, '#': 4,
+                '4': 5, '$': 5,
+                '5': 6, '%': 6,
+                '6': 7, '^': 7,
+                '7': 8, '&': 8,
+                '8': 9, '*': 9,
+                '9': 10, '(': 10,
+                '0': 11, ')': 11,
+                '-': 12, '_': 12,
+                '=': 13, '+': 13,
                 "Backspace": 14,
                 'Tab': 15,
-                'q': 16,
-                'w': 17,
-                'e': 18,
-                'r': 19,
-                't': 20,
-                'y': 21,
-                'u': 22,
-                'i': 23,
-                'o': 24,
-                'p': 25,
-                '[': 26,
-                ']': 27,
+                'q': 16, 'Q': 16,
+                'w': 17, 'W': 17,
+                'e': 18, 'E': 18,
+                'r': 19, 'R': 19,
+                't': 20, 'T': 20,
+                'y': 21, 'Y': 21,
+                'u': 22, 'U': 22,
+                'i': 23, 'I': 23,
+                'o': 24, 'O': 24,
+                'p': 25, 'P': 25,
+                '[': 26, '{': 26,
+                ']': 27, '}': 27,
                 'Enter': 28,
-                'a': 30,
-                's': 31,
-                'd': 32,
-                'f': 33,
-                'g': 34,
-                'h': 35,
-                'j': 36,
-                'k': 37,
-                'l': 38,
-                ';': 39,
-                '\'': 40,
-                '\\': 43,
-                'z': 44,
-                'x': 45,
-                'c': 46,
-                'v': 47,
-                'b': 48,
-                'n': 49,
-                'm': 50,
-                ',': 51,
-                '.': 52,
-                '/': 53,
+                'a': 30, 'A': 30,
+                's': 31, 'S': 31,
+                'd': 32, 'D': 32,
+                'f': 33, 'F': 33,
+                'g': 34, 'G': 34,
+                'h': 35, 'H': 35,
+                'j': 36, 'J': 36,
+                'k': 37, 'K': 37,
+                'l': 38, 'L': 38,
+                ';': 39, ':': 39,
+                '\'': 40, '"': 40,
+                '\\': 43, '|': 43,
+                'z': 44, 'Z': 44,
+                'x': 45, 'X': 45,
+                'c': 46, 'C': 46,
+                'v': 47, 'V': 47,
+                'b': 48, 'B': 48,
+                'n': 49, 'N': 49,
+                'm': 50, 'M': 50,
+                ',': 51, '<': 51,
+                '.': 52, '>': 52,
+                '/': 53, '?': 53,
                 ' ': 57,
                 "F1": 59,
                 "F2": 60,
@@ -155,6 +151,7 @@
         </script>
         <script>
             const vscode = acquireVsCodeApi();
+            var lastMode = 0;
             function abspos(x, y, width) {return (y * width + x) * 4;}
             function setpx(data, x, y, c) {
                 data.data[abspos(x, y, data.width)] = c.r;
@@ -162,7 +159,7 @@
                 data.data[abspos(x, y, data.width) + 2] = c.b;
                 data.data[abspos(x, y, data.width) + 3] = 255;
             }
-            function drawChar(data, c, x, y, fg, bg) {
+            function drawChar(data, c, x, y, fg, bg, transparent) {
                 var srcrect = {
                     width: 6,
                     height: 9,
@@ -179,6 +176,7 @@
                 for (var yy = 0; yy < 9; yy++) {
                     for (var xx = 0; xx < 6; xx++) {
                         var c = font.data[abspos(srcrect.x + xx, srcrect.y + yy, font.width) + 3] > 127 ? fg : bg;
+                        if (transparent && c === bg) continue;
                         setpx(data, destrect.x + (xx * 2), destrect.y + (yy * 2), c);
                         setpx(data, destrect.x + (xx * 2) + 1, destrect.y + (yy * 2), c);
                         setpx(data, destrect.x + (xx * 2), destrect.y + (yy * 2) + 1, c);
@@ -188,18 +186,24 @@
             }
             function render(term) {
                 if (term === undefined || term === null || term.palette === undefined) return;
+                lastMode = term.mode;
                 var ctx = document.getElementById("terminal").getContext("2d");
                 ctx.fillStyle = "#" + term.palette[15].r.toString(16) + term.palette[15].g.toString(16) + term.palette[15].b.toString(16);
                 ctx.fillRect(0, 0, term.width * 12 + 8, term.height * 18 + 8);
                 var data = ctx.createImageData(term.width * 12, term.height * 18);
                 if (term.mode == 0) {
-                    for (var y = 0; y < term.height; y++) {
-                        for (var x = 0; x < term.width; x++) {
+                    for (var y = 0; y < term.height; y++)
+                        for (var x = 0; x < term.width; x++)
                             drawChar(data, term.screen[y][x], x, y, term.palette[term.colors[y][x] & 0x0f], term.palette[term.colors[y][x] >> 4]);
+                    if (term.blink) drawChar(data, "_".charCodeAt(0), term.cursorX, term.cursorY, term.palette[term.colors[term.cursorY][term.cursorX] & 0x0f], term.palette[term.colors[term.cursorY][term.cursorX] >> 4], true);
+                } else if (term.mode == 1 || term.mode == 2) {
+                    for (var y = 0; y < term.height * 9; y++) {
+                        for (var x = 0; x < term.width * 6; x++) {
+                            setpx(data, x * 2, y * 2, term.palette[term.pixels[y][x]]);
+                            setpx(data, x * 2 + 1, y * 2, term.palette[term.pixels[y][x]]);
+                            setpx(data, x * 2, y * 2 + 1, term.palette[term.pixels[y][x]]);
+                            setpx(data, x * 2 + 1, y * 2 + 1, term.palette[term.pixels[y][x]]);
                         }
-                    }
-                    if (term.blink) {
-                        drawChar(data, "_".charCodeAt(0), term.cursorX, term.cursorY, term.palette[term.colors[term.cursorY][term.cursorX] & 0x0f], term.palette[term.colors[term.cursorY][term.cursorX] >> 4]);
                     }
                 }
                 ctx.putImageData(data, 4, 4);
@@ -207,13 +211,22 @@
             function sendPacket(type, extra) {
                 vscode.postMessage({type: type, data: extra});
             }
+            function pack8(n) {return ("0" + n.toString(16)).slice(-2);}
+            function pack16(n) {return pack8(n & 0xFF) + pack8((n >> 8) & 0xFF);}
+            function pack32(n) {return pack16(n & 0xFFFF) + pack16((n >> 16) & 0xFFFF);}
+            function packstr(s) {
+                var retval = "";
+                for (var i = 0; i < s.length; i++) retval += pack8(s.charCodeAt(i));
+                return retval + "00";
+            }
             var events = {}
             events.key = function(e) {
                 if (keymap[e.key] != null) {
                     e.stopPropagation();
                     e.preventDefault();
-                    sendPacket(1, ("0" + keymap[e.key].toString(16)).slice(-2) + "01");
-                    if (e.key.length == 1) sendPacket(1, ("0" + e.key.charCodeAt(0).toString(16)).slice(-2) + "09");
+                    var flags = 1 | (e.repeat ? 2 : 0) | (e.ctrlKey ? 4 : 0);
+                    sendPacket(1, pack8(keymap[e.key]) + pack8(flags));
+                    if (e.key.length == 1) sendPacket(1, pack8(e.key.charCodeAt(0)) + "09");
                     return false;
                 } else return true;
             }
@@ -221,9 +234,41 @@
                 if (keymap[e.key] != null) {
                     e.stopPropagation();
                     e.preventDefault();
-                    sendPacket(1, ("0" + keymap[e.key].toString(16)).slice(-2) + "00");
+                    sendPacket(1, pack8(keymap[e.key]) + "00");
                     return false;
                 } else return true;
+            }
+            events.mouse_click = function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                if (lastMode == 0) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 12) + pack32((e.offsetY - 4) / 18));
+                else if (lastMode == 1 || lastMode == 2) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 2) + pack32()(e.offsetY - 4) / 2);
+            }
+            events.mouse_up = function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                if (lastMode == 0) sendPacket(2, "01" + pack8(e.which) + pack32((e.offsetX - 4) / 12) + pack32((e.offsetY - 4) / 18));
+                else if (lastMode == 1 || lastMode == 2) sendPacket(2, "01" + pack8(e.which) + pack32((e.offsetX - 4) / 2) + pack32()(e.offsetY - 4) / 2);
+            }
+            events.mouse_scroll = function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+                sendPacket(2, "02" + pack8(e.deltaY > 0 ? 1 : 0) + "0000000000000000");
+            }
+            events.mouse_drag = function(e) {
+                if (e.buttons) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    if (lastMode == 0) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 12) + pack32((e.offsetY - 4) / 18));
+                    else if (lastMode == 1 || lastMode == 2) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 2) + pack32()(e.offsetY - 4) / 2);
+                }
+            }
+            events.paste = function(e) {
+                if (typeof e.clipboardData === "string") {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    sendPacket(3, "01" + packstr("paste") + "03" + packstr(e.clipboardData));
+                }
             }
             window.addEventListener("message", (ev) => render(ev.data));
         </script>
@@ -244,6 +289,10 @@
             document.getElementById("font_img").onload = function() {document.getElementById("font").getContext("2d").drawImage(document.getElementById("font_img"), 0, 0);}
             document.addEventListener("keydown", events.key);
             document.addEventListener("keyup", events.key_up);
+            document.getElementById("terminal").addEventListener("mousedown", events.mouse_click);
+            document.getElementById("terminal").addEventListener("mouseup", events.mouse_up);
+            document.getElementById("terminal").addEventListener("wheel", events.mouse_scroll);
+            document.getElementById("terminal").addEventListener("mousemove", events.mouse_drag);
         </script>
     </body>
 </html>
