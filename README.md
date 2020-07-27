@@ -39,6 +39,12 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+### 0.1.1
+
+Fixes a bug where the wrong key events were being sent (e.g. `key_up` when pressing a key down). Also fixes `char` events being sent with modifier keys held.
+
+Download the latest build of CraftOS-PC (from 7/27/20 or later) to fix a bug with events being sent to the wrong window, as well as a bug preventing Ctrl-R/S/T from working properly.
+
 ### 0.1.0
 
 First public alpha release.
