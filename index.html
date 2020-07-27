@@ -224,9 +224,9 @@
                 if (keymap[e.key] != null) {
                     e.stopPropagation();
                     e.preventDefault();
-                    var flags = 1 | (e.repeat ? 2 : 0) | (e.ctrlKey ? 4 : 0);
+                    var flags = (e.repeat ? 2 : 0) | (e.ctrlKey ? 4 : 0);
                     sendPacket(1, pack8(keymap[e.key]) + pack8(flags));
-                    if (e.key.length == 1) sendPacket(1, pack8(e.key.charCodeAt(0)) + "09");
+                    if (e.key.length == 1 && !e.ctrlKey && !e.altKey && !e.metaKey) sendPacket(1, pack8(e.key.charCodeAt(0)) + "09");
                     return false;
                 } else return true;
             }
@@ -234,7 +234,7 @@
                 if (keymap[e.key] != null) {
                     e.stopPropagation();
                     e.preventDefault();
-                    sendPacket(1, pack8(keymap[e.key]) + "00");
+                    sendPacket(1, pack8(keymap[e.key]) + "01");
                     return false;
                 } else return true;
             }
