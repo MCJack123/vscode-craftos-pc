@@ -15,7 +15,7 @@ An extension for Visual Studio Code adding a bunch of new features to help you w
 ## Requirements
 
 * CraftOS-PC v2.3 or later (https://www.craftos-pc.cc)
-  * If using more than one terminal, CraftOS-PC v2.3.4 and earlier will not work due to a bug causing multiple terminals to get the same ID
+  * If using more than one terminal, CraftOS-PC v2.4 or later is required due to a bug in earlier versions causing multiple terminals to get the same ID
   * If on Windows, make sure to install the console version as well under Optional components in the installer
   * If installed in a non-standard directory (such as in your user directory), make sure to set `craftos-pc.executablePath` in the settings
 
@@ -30,14 +30,22 @@ This extension contributes the following settings:
 
 * `craftos-pc.executablePath.[windows|mac|linux|all]`: Path to the CraftOS-PC executable depending on the platform. This should be an absolute path to an executable supporting console output (on Windows, this must be pointing to a copy of `CraftOS-PC_console.exe`, which is optionally available in the installer).
 * `craftos-pc.dataPath`: Path to the data directory storing computer files, configuration, etc.
+* `craftos-pc.additionalArguments`: Additional command-line arguments to send to CraftOS-PC, separated by spaces.
 
 ## Known Issues
 
 * Switching to another tab and back may cause keyboard input to stop working.
   * Workaround: Switch windows and back to make the keyboard work again.
-* There may be some latency when typing things into the terminal.
 
 ## Release Notes
+
+### 0.2.0
+
+* Fixed performance issues causing high CPU usage and major slowdown
+  * Render speed should now be about the same as in standard GUI mode
+* Added `craftos-pc.additionalArguments` setting
+* Added command to close the emulator session without having to close each window
+* Fixed a bug causing CraftOS-PC to not start on Windows when a workspace is open
 
 ### 0.1.1
 

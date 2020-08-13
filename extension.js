@@ -1,5 +1,3 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
 const path = require('path');
 const fs = require('fs');
@@ -7,9 +5,6 @@ const os = require('os');
 const process = require('process');
 const child_process = require('child_process');
 const { SIGINT } = require('constants');
-
-// this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
 
 var windows = {};
 var crcTable = null;
@@ -135,12 +130,14 @@ function connectToProcess() {
     }
     let dir = vscode.workspace.getConfiguration("craftos-pc").get("dataPath");
     let process_options = {
-        cwd: vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders[0].uri.path,
         windowsHide: true
     };
+    let args = vscode.workspace.getConfiguration("craftos-pc").get("additionalArguments");
+    if (args !== null) {args = args.split(' '); args.push("--raw");}
+    else args = ["--raw"];
+    if (dir !== null) args.splice(-1, 0, "-d", dir);
     try {
-        if (dir === null) process_connection = child_process.spawn(exe_path, ["--raw"], process_options);
-        else process_connection = child_process.spawn(exe_path, ["--raw", "-d", dir], process_options);
+        process_connection = child_process.spawn(exe_path, args, process_options);
     } catch (e) {
         vscode.window.showErrorMessage("The CraftOS-PC worker process could not be launched. Check the path to the executable in the settings.");
         console.error(e);
@@ -162,7 +159,7 @@ function connectToProcess() {
         closeAllWindows();
     });
     process_connection.on("close", (code) => {
-        vscode.window.showInformationMessage(`The CraftOS-PC worker process closed all IO streams with code ${code}.`)
+        //vscode.window.showInformationMessage(`The CraftOS-PC worker process closed all IO streams with code ${code}.`)
         process_connection = null;
         closeAllWindows();
     });
@@ -268,7 +265,7 @@ function connectToProcess() {
                         process_connection.disconnect();
                     } else {
                         process_connection.kill(SIGINT);
-                        vscode.window.showWarningMessage("The CraftOS-PC worker process did not close correctly. Some changes may not have been saved.")
+                        //vscode.window.showWarningMessage("The CraftOS-PC worker process did not close correctly. Some changes may not have been saved.")
                     }
                     closeAllWindows();
                     return;
@@ -319,7 +316,6 @@ function connectToProcess() {
     openPanel(0, true);
 }
 
-//var packet = "!CPC" + ("000" + b64.length.toString(16)).slice(-4) + b64 + ("0000000" + crc32(b64).toString(16)).slice(-8) + "\n";
 function openPanel(id, force) {
     if (!force && (extcontext === null || windows[id] === undefined)) return;
     if (windows[id] !== undefined && windows[id].panel !== undefined) {
@@ -406,6 +402,10 @@ function activate(context) {
             if (!fs.existsSync(getDataPath() + "/computer/" + value)) vscode.window.showErrorMessage("The computer ID provided does not exist.");
             else vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(getDataPath() + "/computer/" + value));
         })
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.close', function() {
+        if (process_connection !== null) process_connection.stdin.write("!CPC000CBAACAAAAAAAA3AB9B910\n", "utf8");
     }));
 
     computer_tree = vscode.window.createTreeView("craftos-computers", {"treeDataProvider": computer_provider});

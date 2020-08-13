@@ -2,7 +2,7 @@
 	"name": "craftos-pc",
 	"displayName": "CraftOS-PC for VS Code",
 	"description": "Adds the ability to open CraftOS-PC windows inside VS Code, as well as some ease-of-use functionality to make ComputerCraft programming easier.",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"engines": {
 		"vscode": "^1.41.0"
 	},
@@ -41,6 +41,10 @@
 			{
 				"command": "craftos-pc.open-config",
 				"title": "CraftOS-PC: Open Configuration"
+			},
+			{
+				"command": "craftos-pc.close",
+				"title": "CraftOS-PC: Close Session"
 			}
 		],
 		"viewsContainers": {
@@ -94,8 +98,14 @@
 				"craftos-pc.dataPath": {
 					"type": "string",
 					"default": null,
-					"description": "The path to the data directory to use for CraftOS-PC. This defaults to the standard data directory location. The path is relative to the workspace directory.",
+					"description": "The path to the data directory to use for CraftOS-PC. This defaults to the standard data directory location.",
 					"scope": "window"
+				},
+				"craftos-pc.additionalArguments": {
+					"type": "string",
+					"default": null,
+					"description": "Additional command-line arguments to pass to CraftOS-PC.",
+					"scope": "machine-overridable"
 				}
 			}
 		},

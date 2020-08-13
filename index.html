@@ -159,6 +159,7 @@
                 data.data[abspos(x, y, data.width) + 2] = c.b;
                 data.data[abspos(x, y, data.width) + 3] = 255;
             }
+            var font = null;
             function drawChar(data, c, x, y, fg, bg, transparent) {
                 var srcrect = {
                     width: 6,
@@ -172,7 +173,6 @@
                     width: 12, 
                     height: 18
                 };
-                var font = document.getElementById("font").getContext("2d").getImageData(0, 0, 128, 175);
                 for (var yy = 0; yy < 9; yy++) {
                     for (var xx = 0; xx < 6; xx++) {
                         var c = font.data[abspos(srcrect.x + xx, srcrect.y + yy, font.width) + 3] > 127 ? fg : bg;
@@ -184,29 +184,26 @@
                     }
                 }
             }
+            var ctx = null, ctxdata = null;
             function render(term) {
-                if (term === undefined || term === null || term.palette === undefined) return;
+                if (term === undefined || term === null || term.palette === undefined || ctx == null || ctxdata == null || font == null) return;
                 lastMode = term.mode;
-                var ctx = document.getElementById("terminal").getContext("2d");
-                ctx.fillStyle = "#" + term.palette[15].r.toString(16) + term.palette[15].g.toString(16) + term.palette[15].b.toString(16);
-                ctx.fillRect(0, 0, term.width * 12 + 8, term.height * 18 + 8);
-                var data = ctx.createImageData(term.width * 12, term.height * 18);
                 if (term.mode == 0) {
                     for (var y = 0; y < term.height; y++)
                         for (var x = 0; x < term.width; x++)
-                            drawChar(data, term.screen[y][x], x, y, term.palette[term.colors[y][x] & 0x0f], term.palette[term.colors[y][x] >> 4]);
-                    if (term.blink) drawChar(data, "_".charCodeAt(0), term.cursorX, term.cursorY, term.palette[term.colors[term.cursorY][term.cursorX] & 0x0f], term.palette[term.colors[term.cursorY][term.cursorX] >> 4], true);
+                            drawChar(ctxdata, term.screen[y][x], x, y, term.palette[term.colors[y][x] & 0x0f], term.palette[term.colors[y][x] >> 4]);
+                    if (term.blink) drawChar(ctxdata, "_".charCodeAt(0), term.cursorX, term.cursorY, term.palette[term.colors[term.cursorY][term.cursorX] & 0x0f], term.palette[term.colors[term.cursorY][term.cursorX] >> 4], true);
                 } else if (term.mode == 1 || term.mode == 2) {
                     for (var y = 0; y < term.height * 9; y++) {
                         for (var x = 0; x < term.width * 6; x++) {
-                            setpx(data, x * 2, y * 2, term.palette[term.pixels[y][x]]);
-                            setpx(data, x * 2 + 1, y * 2, term.palette[term.pixels[y][x]]);
-                            setpx(data, x * 2, y * 2 + 1, term.palette[term.pixels[y][x]]);
-                            setpx(data, x * 2 + 1, y * 2 + 1, term.palette[term.pixels[y][x]]);
+                            setpx(ctxdata, x * 2, y * 2, term.palette[term.pixels[y][x]]);
+                            setpx(ctxdata, x * 2 + 1, y * 2, term.palette[term.pixels[y][x]]);
+                            setpx(ctxdata, x * 2, y * 2 + 1, term.palette[term.pixels[y][x]]);
+                            setpx(ctxdata, x * 2 + 1, y * 2 + 1, term.palette[term.pixels[y][x]]);
                         }
                     }
                 }
-                ctx.putImageData(data, 4, 4);
+                ctx.putImageData(ctxdata, 4, 4);
             }
             function sendPacket(type, extra) {
                 vscode.postMessage({type: type, data: extra});
@@ -283,10 +280,14 @@
             <div class="border-bottom-left"></div><div class="border-bottom"></div><div class="border-bottom-right"></div>
         </div><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
         <script>
-            var ctx = document.getElementById("terminal").getContext("2d");
+            ctx = document.getElementById("terminal").getContext("2d");
             ctx.fillStyle = "#191919";
             ctx.fillRect(0, 0, 620, 350);
-            document.getElementById("font_img").onload = function() {document.getElementById("font").getContext("2d").drawImage(document.getElementById("font_img"), 0, 0);}
+            ctxdata = ctx.createImageData(612, 342);
+            document.getElementById("font_img").onload = function() {
+                document.getElementById("font").getContext("2d").drawImage(document.getElementById("font_img"), 0, 0);
+                font = document.getElementById("font").getContext("2d").getImageData(0, 0, 128, 175);
+            }
             document.addEventListener("keydown", events.key);
             document.addEventListener("keyup", events.key_up);
             document.getElementById("terminal").addEventListener("mousedown", events.mouse_click);
