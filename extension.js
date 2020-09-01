@@ -128,6 +128,10 @@ function connectToProcess() {
         vscode.window.showErrorMessage("Please set the path to the CraftOS-PC executable in the settings.");
         return false;
     }
+    if (!fs.existsSync(exe_path)) {
+        vscode.window.showErrorMessage("The CraftOS-PC executable could not be found. Check the path in the settings." + (os.platform() === "win32" ? " If you installed CraftOS-PC without administrator privileges, you will need to set the path manually. Also make sure CraftOS-PC_console.exe exists in the install directory - if not, reinstall CraftOS-PC with the Console build component enabled." : ""));
+        return false;
+    }
     let dir = vscode.workspace.getConfiguration("craftos-pc").get("dataPath");
     let process_options = {
         windowsHide: true
