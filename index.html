@@ -256,8 +256,8 @@
                 if (e.buttons) {
                     e.stopPropagation();
                     e.preventDefault();
-                    if (lastMode == 0) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 12) + pack32((e.offsetY - 4) / 18));
-                    else if (lastMode == 1 || lastMode == 2) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 2) + pack32()(e.offsetY - 4) / 2);
+                    if (lastMode == 0) sendPacket(2, "03" + pack8(e.which) + pack32((e.offsetX - 4) / 12) + pack32((e.offsetY - 4) / 18));
+                    else if (lastMode == 1 || lastMode == 2) sendPacket(2, "03" + pack8(e.which) + pack32((e.offsetX - 4) / 2) + pack32()(e.offsetY - 4) / 2);
                 }
             }
             events.paste = function(e) {
