@@ -2,6 +2,11 @@
 
 All notable changes to the "craftos-pc" extension will be documented in this file.
 
+## 0.2.1
+
+* Added an error message if the executable is missing
+* Fixed `mouse_click` events being sent instead of `mouse_drag`
+
 ## 0.2.0
 
 * Fixed performance issues causing high CPU usage and major slowdown
