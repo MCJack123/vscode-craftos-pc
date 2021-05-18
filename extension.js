@@ -9,8 +9,6 @@ const { SIGINT } = require('constants');
 var windows = {};
 var crcTable = null;
 var extcontext = null;
-var computer_tree = null;
-var monitor_tree = null;
 
 function makeCRCTable() {
     let c;
@@ -66,6 +64,7 @@ const computer_provider = {
         let r = new vscode.TreeItem(element.title);
         r.iconPath = vscode.Uri.file(path.join(extcontext.extensionPath, 'media/computer.svg'));
         r.command = {command: "craftos-pc.open-window", title: "CraftOS-PC: Open Window", arguments: [element]};
+        if (windows[element.id].computerID !== undefined) r.contextValue = "data-available";
         return r;
     },
     _onDidChangeTreeData: new vscode.EventEmitter(),
@@ -190,6 +189,7 @@ function connectToProcess() {
         const stream = bufferstream(data);
         const type = stream.get();
         const id = stream.get();
+        let winid = null;
         if (type === 0) {
             term.mode = stream.get();
             term.blink = stream.get() === 1;
@@ -280,12 +280,20 @@ function connectToProcess() {
                 monitor_provider._onDidChangeTreeData.fire(null);
                 return;
             } else if (type2 === 0) {
-                stream.get();
+                winid = stream.get();
                 term.width = stream.readUInt16();
                 term.height = stream.readUInt16();
                 term.title = "";
                 for (let c = stream.get(); c !== 0; c = stream.get()) term.title += String.fromCharCode(c);
-                if (windows[id] !== undefined) windows[id].isMonitor = typeof term.title === "string" && term.title.indexOf("Monitor") !== -1;
+                if (windows[id] !== undefined) {
+                    windows[id].isMonitor = typeof term.title === "string" && term.title.indexOf("Monitor") !== -1;
+                    if (winid > 0) {
+                        windows[id].computerID = winid - 1;
+                        windows[id].isMonitor = false;
+                    } else if (typeof windows[id].term.title === "string" && windows[id].term.title.match(/Computer \d+$/)) {
+                        windows[id].computerID = parseInt(windows[id].term.title.match(/Computer (\d+)$/)[1]);
+                    }
+                }
             }
         } else if (type === 5) {
             const flags = stream.readUInt32();
@@ -302,7 +310,15 @@ function connectToProcess() {
         if (windows[id] === undefined) windows[id] = {};
         if (windows[id].term === undefined) windows[id].term = {};
         for (let k in term) windows[id].term[k] = term[k];
-        if (windows[id].isMonitor === undefined) windows[id].isMonitor = typeof windows[id].term.title === "string" && windows[id].term.title.indexOf("Monitor") !== -1;
+        if (windows[id].isMonitor === undefined) {
+            windows[id].isMonitor = typeof windows[id].term.title === "string" && windows[id].term.title.indexOf("Monitor") !== -1;
+            if (winid !== null && winid > 0) {
+                windows[id].computerID = winid - 1;
+                windows[id].isMonitor = false;
+            } else if (typeof windows[id].term.title === "string" && windows[id].term.title.match(/Computer \d+$/)) {
+                windows[id].computerID = parseInt(windows[id].term.title.match(/Computer (\d+)$/)[1]);
+            }
+        }
         if (windows[id].panel !== undefined) {
             windows[id].panel.webview.postMessage(windows[id].term);
             windows[id].panel.title = windows[id].term.title || "CraftOS-PC Terminal";
@@ -413,15 +429,19 @@ function activate(context) {
         vscode.commands.executeCommand("vscode.open", vscode.Uri.file(getDataPath() + "/config/global.json"));
     }));
 
-    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-computer-data', () => {
+    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-computer-data', obj => {
         if (getDataPath() === null) {
             vscode.window.showErrorMessage("Please set the path to the CraftOS-PC data directory manually.");
             return;
         }
-        vscode.window.showInputBox({prompt: "Enter the computer ID:", validateInput: str => isNaN(parseInt(str)) ? "Invalid number" : null}).then(value => {
-            if (!fs.existsSync(getDataPath() + "/computer/" + value)) vscode.window.showErrorMessage("The computer ID provided does not exist.");
-            else vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(getDataPath() + "/computer/" + value));
-        })
+        if (typeof obj === "object") {
+            vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(getDataPath() + "/computer/" + windows[parseInt(obj.id)].computerID), {forceNewWindow: true});
+        } else {
+            vscode.window.showInputBox({prompt: "Enter the computer ID:", validateInput: str => isNaN(parseInt(str)) ? "Invalid number" : null}).then(value => {
+                if (!fs.existsSync(getDataPath() + "/computer/" + value)) vscode.window.showErrorMessage("The computer ID provided does not exist.");
+                else vscode.commands.executeCommand("vscode.openFolder", vscode.Uri.file(getDataPath() + "/computer/" + value));
+            });
+        }
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.close', () => {
@@ -451,8 +471,8 @@ function activate(context) {
         });
     }));
 
-    computer_tree = vscode.window.createTreeView("craftos-computers", {"treeDataProvider": computer_provider});
-    monitor_tree = vscode.window.createTreeView("craftos-monitors", {"treeDataProvider": monitor_provider});
+    vscode.window.createTreeView("craftos-computers", {"treeDataProvider": computer_provider});
+    vscode.window.createTreeView("craftos-monitors", {"treeDataProvider": monitor_provider});
 }
 exports.activate = activate;
 

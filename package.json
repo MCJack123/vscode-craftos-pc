@@ -36,7 +36,11 @@
 			},
 			{
 				"command": "craftos-pc.open-computer-data",
-				"title": "CraftOS-PC: Open Data Directory for Computer..."
+				"title": "CraftOS-PC: Open Data Directory for Computer...",
+				"icon": {
+					"light": "media/root-folder-opened-light.svg",
+					"dark": "media/root-folder-opened-dark.svg"
+				}
 			},
 			{
 				"command": "craftos-pc.open-config",
@@ -52,7 +56,7 @@
 			},
 			{
 				"command": "craftos-pc.close-window",
-				"title": "CraftOS-PC: Close Window With ID",
+				"title": "CraftOS-PC: Close Window",
 				"icon": {
 					"light": "media/close-light.svg",
 					"dark": "media/close-dark.svg"
@@ -88,6 +92,11 @@
 		],
 		"menus": {
 			"view/item/context": [
+				{
+					"command": "craftos-pc.open-computer-data",
+					"when": "view == craftos-computers && viewItem == data-available",
+					"group": "inline"
+				},
 				{
 					"command": "craftos-pc.close-window",
 					"when": "view == craftos-computers || view == craftos-monitors",
