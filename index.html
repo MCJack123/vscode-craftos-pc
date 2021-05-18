@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>CraftOS-PC v2.3</title>
+        <title>CraftOS-PC for VS Code</title>
         <meta charset="utf-8">
         <style>
             #textmode {
@@ -174,21 +174,21 @@
             }
             var font = null;
             function drawChar(data, c, x, y, fg, bg, transparent) {
-                var srcrect = {
+                const srcrect = {
                     width: 12,
                     height: 18,
                     x: 16*(c & 0x0F)+2,
                     y: 22*(c >> 4)+2,
                 };
-                var destrect = {
+                const destrect = {
                     x: x * 12, 
                     y: y * 18, 
                     width: 12, 
                     height: 18
                 };
-                for (var yy = 0; yy < 18; yy++) {
-                    for (var xx = 0; xx < 12; xx++) {
-                        var c = font.data[abspos(srcrect.x + xx, srcrect.y + yy, font.width) + 3] > 127 ? fg : bg;
+                for (let yy = 0; yy < 18; yy++) {
+                    for (let xx = 0; xx < 12; xx++) {
+                        let c = font.data[abspos(srcrect.x + xx, srcrect.y + yy, font.width) + 3] > 127 ? fg : bg;
                         if (transparent && c === bg) continue;
                         setpx(data, destrect.x + xx, destrect.y + yy, c);
                     }
@@ -196,27 +196,25 @@
             }
             var ctx = null, ctxdata = null;
             function render(term) {
-                console.log(term);
                 if (typeof term !== "object") return;
                 if (typeof term.fontPath === "string") {
-                    console.log(term.fontPath);
                     document.getElementById("font_img").src = term.fontPath;
                     const ctx = document.getElementById("font").getContext("2d");
                     ctx.clearRect(0, 0, 256, 350);
-                    ctx.drawImage(document.getElementById("font_img"), 0, 0);
-                    font = ctx.getImageData(0, 0, 256, 350);
+                    //ctx.drawImage(document.getElementById("font_img"), 0, 0);
+                    //font = ctx.getImageData(0, 0, 256, 350);
                     return;
                 }
                 if (term.palette === undefined || ctx == null || ctxdata == null || font == null) return;
                 lastMode = term.mode;
                 if (term.mode == 0) {
-                    for (var y = 0; y < term.height; y++)
-                        for (var x = 0; x < term.width; x++)
+                    for (let y = 0; y < term.height; y++)
+                        for (let x = 0; x < term.width; x++)
                             drawChar(ctxdata, term.screen[y][x], x, y, term.palette[term.colors[y][x] & 0x0f], term.palette[term.colors[y][x] >> 4]);
                     if (term.blink) drawChar(ctxdata, "_".charCodeAt(0), term.cursorX, term.cursorY, term.palette[term.colors[term.cursorY][term.cursorX] & 0x0f], term.palette[term.colors[term.cursorY][term.cursorX] >> 4], true);
                 } else if (term.mode == 1 || term.mode == 2) {
-                    for (var y = 0; y < term.height * 9; y++) {
-                        for (var x = 0; x < term.width * 6; x++) {
+                    for (let y = 0; y < term.height * 9; y++) {
+                        for (let x = 0; x < term.width * 6; x++) {
                             setpx(ctxdata, x * 2, y * 2, term.palette[term.pixels[y][x]]);
                             setpx(ctxdata, x * 2 + 1, y * 2, term.palette[term.pixels[y][x]]);
                             setpx(ctxdata, x * 2, y * 2 + 1, term.palette[term.pixels[y][x]]);
@@ -235,25 +233,25 @@
             function pack16(n) {return pack8(n & 0xFF) + pack8((n >> 8) & 0xFF);}
             function pack32(n) {return pack16(n & 0xFFFF) + pack16((n >> 16) & 0xFFFF);}
             function packstr(s) {
-                var retval = "";
-                for (var i = 0; i < s.length; i++) retval += pack8(s.charCodeAt(i));
+                let retval = "";
+                for (let i = 0; i < s.length; i++) retval += pack8(s.charCodeAt(i));
                 return retval + "00";
             }
             var lastMouse = {x: 0, y: 0};
             var events = {};
-            events.key = function(e) {
+            events.key = e => {
                 if (keymap[e.key] != null) {
                     if (!(e.key === 'v' && (e.ctrlKey || e.metaKey))) {
                         e.stopPropagation();
                         e.preventDefault();
                     }
-                    var flags = (e.repeat ? 2 : 0) | (e.ctrlKey ? 4 : 0);
+                    const flags = (e.repeat ? 2 : 0) | (e.ctrlKey ? 4 : 0);
                     sendPacket(1, pack8(keymap[e.key]) + pack8(flags));
                     if (e.key.length == 1 && !e.ctrlKey && !e.altKey && !e.metaKey) sendPacket(1, pack8(e.key.charCodeAt(0)) + "09");
                     return e.key === 'v' && (e.ctrlKey || e.metaKey);
                 } else return true;
             }
-            events.key_up = function(e) {
+            events.key_up = e => {
                 if (keymap[e.key] != null) {
                     e.stopPropagation();
                     e.preventDefault();
@@ -261,25 +259,25 @@
                     return false;
                 } else return true;
             }
-            events.mouse_click = function(e) {
+            events.mouse_click = e => {
                 e.stopPropagation();
                 e.preventDefault();
                 lastMouse = {x: -1, y: -1};
                 if (lastMode == 0) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 12 + 1) + pack32((e.offsetY - 4) / 18 + 1));
                 else if (lastMode == 1 || lastMode == 2) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 2 + 1) + pack32((e.offsetY - 4) / 2 + 1));
             }
-            events.mouse_up = function(e) {
+            events.mouse_up = e => {
                 e.stopPropagation();
                 e.preventDefault();
                 if (lastMode == 0) sendPacket(2, "01" + pack8(e.which) + pack32((e.offsetX - 4) / 12 + 1) + pack32((e.offsetY - 4) / 18 + 1));
                 else if (lastMode == 1 || lastMode == 2) sendPacket(2, "01" + pack8(e.which) + pack32((e.offsetX - 4) / 2 + 1) + pack32((e.offsetY - 4) / 2 + 1));
             }
-            events.mouse_scroll = function(e) {
+            events.mouse_scroll = e => {
                 e.stopPropagation();
                 e.preventDefault();
                 sendPacket(2, "02" + pack8(e.deltaY > 0 ? 1 : 0) + "0000000000000000");
             }
-            events.mouse_drag = function(e) {
+            events.mouse_drag = e => {
                 if (e.buttons) {
                     e.stopPropagation();
                     e.preventDefault();
@@ -292,9 +290,8 @@
                     }
                 }
             }
-            events.paste = function(e) {
-                console.log(e);
-                let data = e.clipboardData.getData("text/plain");
+            events.paste = e => {
+                const data = e.clipboardData.getData("text/plain");
                 if (typeof data === "string") {
                     e.stopPropagation();
                     e.preventDefault();

@@ -32,7 +32,7 @@
 			},
 			{
 				"command": "craftos-pc.open-window",
-				"title": "CraftOS-PC: Open Window With ID"
+				"title": "CraftOS-PC: Open Window with ID..."
 			},
 			{
 				"command": "craftos-pc.open-computer-data",
@@ -44,7 +44,11 @@
 			},
 			{
 				"command": "craftos-pc.close",
-				"title": "CraftOS-PC: Close Session"
+				"title": "CraftOS-PC: Close Session",
+				"icon": {
+					"light": "media/close-light.svg",
+					"dark": "media/close-dark.svg"
+				}
 			},
 			{
 				"command": "craftos-pc.close-window",
@@ -76,12 +80,25 @@
 				}
 			]
 		},
+		"viewsWelcome": [
+			{
+				"view": "craftos-computers",
+				"contents": "You must start CraftOS-PC before using this tab.\n[Start CraftOS-PC](command:craftos-pc.open)"
+			}
+		],
 		"menus": {
 			"view/item/context": [
 				{
 					"command": "craftos-pc.close-window",
 					"when": "view == craftos-computers || view == craftos-monitors",
 					"group": "inline"
+				}
+			],
+			"view/title": [
+				{
+					"command": "craftos-pc.close",
+					"when": "view == craftos-computers",
+					"group": "navigation"
 				}
 			]
 		},
@@ -137,13 +154,7 @@
 					"scope": "machine-overridable"
 				}
 			}
-		},
-		"viewsWelcome": [
-			{
-				"view": "craftos-computers",
-				"contents": "You must start CraftOS-PC before using this tab.\n[Start CraftOS-PC](command:craftos-pc.open)"
-			}
-		]
+		}
 	},
 	"scripts": {
 		"lint": "eslint .",
