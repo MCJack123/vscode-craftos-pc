@@ -8,6 +8,8 @@
             }
             .main-container {
                 line-height: 12px;
+                width: max-content;
+                overflow: visible;
             }
             .main-container br {
                 height: 0;
@@ -68,6 +70,17 @@
                 height: 12px;
                 background-position: -24px -40px;
                 transform: translateX(363px);
+            }
+            #pastebox {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: calc(100vw - 8px);
+                height: calc(100vh - 8px);
+                opacity: 0;
+                overflow: hidden;
+                z-index: 500;
+                cursor: default;
             }
         </style>
         <script>
@@ -164,8 +177,8 @@
                 var srcrect = {
                     width: 6,
                     height: 9,
-                    x: ((6 + 2))*(c & 0x0F),
-                    y: ((9 + 2))*(c >> 4),
+                    x: 8*(c & 0x0F)+1,
+                    y: 11*(c >> 4)+1,
                 };
                 var destrect = {
                     x: x * 12, 
@@ -203,6 +216,8 @@
                         }
                     }
                 }
+                ctx.fillStyle = "#" + ((term.palette[15].r << 16) | (term.palette[15].g << 8) | term.palette[15].b).toString(16);
+                ctx.fillRect(0, 0, 620, 350);
                 ctx.putImageData(ctxdata, 4, 4);
             }
             function sendPacket(type, extra) {
@@ -216,15 +231,18 @@
                 for (var i = 0; i < s.length; i++) retval += pack8(s.charCodeAt(i));
                 return retval + "00";
             }
-            var events = {}
+            var lastMouse = {x: 0, y: 0};
+            var events = {};
             events.key = function(e) {
                 if (keymap[e.key] != null) {
-                    e.stopPropagation();
-                    e.preventDefault();
+                    if (!(e.key === 'v' && (e.ctrlKey || e.metaKey))) {
+                        e.stopPropagation();
+                        e.preventDefault();
+                    }
                     var flags = (e.repeat ? 2 : 0) | (e.ctrlKey ? 4 : 0);
                     sendPacket(1, pack8(keymap[e.key]) + pack8(flags));
                     if (e.key.length == 1 && !e.ctrlKey && !e.altKey && !e.metaKey) sendPacket(1, pack8(e.key.charCodeAt(0)) + "09");
-                    return false;
+                    return e.key === 'v' && (e.ctrlKey || e.metaKey);
                 } else return true;
             }
             events.key_up = function(e) {
@@ -238,14 +256,15 @@
             events.mouse_click = function(e) {
                 e.stopPropagation();
                 e.preventDefault();
-                if (lastMode == 0) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 12) + pack32((e.offsetY - 4) / 18));
-                else if (lastMode == 1 || lastMode == 2) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 2) + pack32()(e.offsetY - 4) / 2);
+                lastMouse = {x: -1, y: -1};
+                if (lastMode == 0) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 12 + 1) + pack32((e.offsetY - 4) / 18 + 1));
+                else if (lastMode == 1 || lastMode == 2) sendPacket(2, "00" + pack8(e.which) + pack32((e.offsetX - 4) / 2 + 1) + pack32((e.offsetY - 4) / 2 + 1));
             }
             events.mouse_up = function(e) {
                 e.stopPropagation();
                 e.preventDefault();
-                if (lastMode == 0) sendPacket(2, "01" + pack8(e.which) + pack32((e.offsetX - 4) / 12) + pack32((e.offsetY - 4) / 18));
-                else if (lastMode == 1 || lastMode == 2) sendPacket(2, "01" + pack8(e.which) + pack32((e.offsetX - 4) / 2) + pack32()(e.offsetY - 4) / 2);
+                if (lastMode == 0) sendPacket(2, "01" + pack8(e.which) + pack32((e.offsetX - 4) / 12 + 1) + pack32((e.offsetY - 4) / 18 + 1));
+                else if (lastMode == 1 || lastMode == 2) sendPacket(2, "01" + pack8(e.which) + pack32((e.offsetX - 4) / 2 + 1) + pack32((e.offsetY - 4) / 2 + 1));
             }
             events.mouse_scroll = function(e) {
                 e.stopPropagation();
@@ -256,16 +275,24 @@
                 if (e.buttons) {
                     e.stopPropagation();
                     e.preventDefault();
-                    if (lastMode == 0) sendPacket(2, "03" + pack8(e.which) + pack32((e.offsetX - 4) / 12) + pack32((e.offsetY - 4) / 18));
-                    else if (lastMode == 1 || lastMode == 2) sendPacket(2, "03" + pack8(e.which) + pack32((e.offsetX - 4) / 2) + pack32()(e.offsetY - 4) / 2);
+                    if (lastMode == 0 && (lastMouse.x !== Math.floor((e.offsetX - 4) / 12 + 1) || lastMouse.y !== Math.floor((e.offsetY - 4) / 18 + 1))) {
+                        sendPacket(2, "03" + pack8(e.which) + pack32((e.offsetX - 4) / 12 + 1) + pack32((e.offsetY - 4) / 18 + 1));
+                        lastMouse = {x: Math.floor((e.offsetX - 4) / 12 + 1), y: Math.floor((e.offsetY - 4) / 18 + 1)};
+                    } else if ((lastMode == 1 || lastMode == 2) && (lastMouse.x !== Math.floor((e.offsetX - 4) / 2 + 1) || lastMouse.y !== Math.floor((e.offsetY - 4) / 2 + 1))) {
+                        sendPacket(2, "03" + pack8(e.which) + pack32((e.offsetX - 4) / 2 + 1) + pack32((e.offsetY - 4) / 2 + 1));
+                        lastMouse = {x: Math.floor((e.offsetX - 4) / 2 + 1), y: Math.floor((e.offsetY - 4) / 2 + 1)};
+                    }
                 }
             }
             events.paste = function(e) {
-                if (typeof e.clipboardData === "string") {
+                console.log(e);
+                let data = e.clipboardData.getData("text/plain");
+                if (typeof data === "string") {
                     e.stopPropagation();
                     e.preventDefault();
-                    sendPacket(3, "01" + packstr("paste") + "03" + packstr(e.clipboardData));
+                    sendPacket(3, "01" + packstr("paste") + "03" + packstr(data.replace(/\n.*$/, "")));
                 }
+                document.getElementById("pastebox").innerHTML = "";
             }
             window.addEventListener("message", (ev) => render(ev.data));
         </script>
@@ -273,6 +300,7 @@
     <body>
         <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACvAgMAAABIqj67AAAACVBMVEUAYHMAAAD///+OtqXfAAAAAXRSTlMAQObYZgAAAAFiS0dEAIgFHUgAAAAJcEhZcwAADsMAAA7DAcdvqGQAAASsSURBVFjDzVhBciMhDFRxoniFitPUvJJjnsExlVeuuiUx2HE2OWzsZTZrZtwjUNMIySLftzbawGfh3fmeTxdA9Zx1FHtUFqBMVQPNhrtjdoM0h4zj4FsEVK01LOTVplYOoJuFrkoLO0A5ryph4eAAvGII5XwO4R28KMsbn2SjFwG4belmkee2YpSYz1Pck9svjQ9to2rXy6MEFTmnnMa7rYUBOpy0PthoAqJBfjyyIUiuv41ncJjMwAIAxSCwgK9hQfESCMQcgC8qNs1YU7Oi4vAQByyco81rgnhpc3MRPeUlzaalEK0aMTLMlzuiA2BiG3XIIOia9vClMj0alP6bCBUk3wCMdy4SuASgDFI9w1Jx/03OfcidhZqWbBBjU330IcFncYAPAS8wRHrhAP2b889rLhGTFqQ3sIkjdJAT69vc7c/WwSRZ2cOapLP2UCd1Z+ScA/JLACVv71t0gMzLAPa0xbIh5uJQDXKoLxDIxrsALh6oaj7EY03A8DmEpiP0DGzA8MhXgl6U/4FoBksTC/4iTirpDbfQr5pNeCl9N1aPeeBhf7M3B744LRQoo4XRRo67AzQNiptNC9ZFSO/vDwFJbT7c+079AmDe6YXdDSXliP/hxf/QfIJt+qS8QR8ap2A6KeGchZIK/iFD9GDB3Sw3kncAgnOQI3pZ8DjjO+MOUEenDX//AowkuI5jsncLaKTUg7hDU+U/IWE+J1J7QOZ/Ex9Q1LbpdsDq3+xKo7kjKkBJti86tzxi7cH9wnehf3WK9KBoQXj3VRSqkvtilqVqhIAFuFRdCHbSc/Fo4Rw+vu8IAlTGQ1Wf4y7JevLheNNswpYq1apfAFy6Rt6wg6xZ7oFAtO+LFc6rhWJFqNn2BWJtzVAaUWDpsasf0WnBhsC2wzGQsschXWUbgmeE8CCYvhaM/PTCh5D7w/HciNbvSC/1Jxx+2L+P9/j8+Pz5DEDOxK/sZPuHgNe2R/6fn4j6XcCvU/3d9QzAD0NHGZ5R2b4cIu3+vEB94bGRZcyMw0hafm3lAxOuwrxY3ywYcL/2twDg5GQIxkaXXpGjI+W5AMwkYaERYPGfe74fy0KNuMIj5Q1pNONCXXM4o6BEbGhe8VyTjJNGXyf6xpPuYJK7pbuMmn5+DU8HlPWzsBRuDKHqGYhyBQ6+4wBw0pkeHDgimyAD8/K6aRkOqFF1RgGSFgoBJ3vVatA6dT8p8HgVh8MA9ndD3/lGALXQI5vk+ZdZhn6XUf/aYhyorDBrJErWy/uGqkNq5FJgLuYumzb4NTLYvAwg68eOeHZlD0ptS14lfwe4fiAxmXMD+LUAu4WOtPnewg1gyvg0h1eWLtdBXPSiG8QdzD8qSnRzl/rzeoBOemoVa+CFXTQHVaQlBDFpszTQMpBjYyIzuMiwPcnrG8AS5w3sRabq1Iet+BzOKFqS2KuPwNK/SzCeE1V2Ve/3D1WdueiXqq7zcnlJTi4ha6/X2iwAsuG8UEqlJn+u6t1CfZeR/fLoB7RXqRp07qp2skPV5HL0je71G9D1u2sUD5uidlVvss+Ue1do0U8AkV3jDywUuWTvafQqxTdVB9msF/Wv2/o2x/6i/QF9P1+5ZJA2agAAAABJRU5ErkJggg==" style="display: none" id="font_img">
         <canvas width=128 height=175 id="font" style="display: none"></canvas>
+        <textarea id="pastebox"></textarea>
         <br>
         <div style="position: absolute" class="main-container">
             <div class="border-top-left"></div><div class="border-top"></div><div class="border-top-right"></div><br>
@@ -294,6 +322,13 @@
             document.getElementById("terminal").addEventListener("mouseup", events.mouse_up);
             document.getElementById("terminal").addEventListener("wheel", events.mouse_scroll);
             document.getElementById("terminal").addEventListener("mousemove", events.mouse_drag);
+            document.getElementById("pastebox").addEventListener("paste", events.paste);
+            document.addEventListener("onvisibilitychange", () => {
+                document.getElementById("pastebox").focus();
+                document.getElementById("pastebox").select();
+            });
+            document.getElementById("pastebox").focus();
+            document.getElementById("pastebox").select();
         </script>
     </body>
 </html>
