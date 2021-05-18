@@ -326,13 +326,29 @@ function openPanel(id, force) {
         windows[id].panel.reveal();
         return;
     }
+    const customFont = vscode.workspace.getConfiguration("craftos-pc.customFont");
+    let fontPath = customFont.get("path");
+    if (fontPath !== null) {
+        if (fontPath === "hdfont") {
+            const execPath = getSetting("craftos-pc.executablePath");
+            if (os.platform() === "win32") fontPath = execPath.replace(/\/[^\/]+$/, "/") + "hdfont.bmp";
+            else if (os.platform() === "darwin" && execPath.indexOf("MacOS/craftos") !== -1) fontPath = execPath.replace(/MacOS\/[^\/]+$/, "") + "Resources/hdfont.bmp";
+            else if (os.platform() == "darwin" || (os.platform() == "linux" && !fs.existsSync("/usr/share/craftos/hdfont.bmp"))) fontPath = "/usr/local/share/craftos/hdfont.bmp";
+            else if (os.platform() == "linux") fontPath = "/usr/share/craftos/hdfont.bmp";
+            if (!fs.existsSync(fontPath)) {
+                vscode.window.showWarningMessage("The path to the HD font could not be found; the default font will be used instead. Please set the path to the HD font manually.");
+                fontPath = null;
+            }
+        }
+    }
     const panel = vscode.window.createWebviewPanel(
         'craftos-pc',
         'CraftOS-PC Terminal',
         vscode.window.activeTextEditor && vscode.window.activeTextEditor.viewColumn || vscode.ViewColumn.One,
         {
             enableScripts: true,
-            retainContextWhenHidden: true
+            retainContextWhenHidden: true,
+            localResourceRoots: fontPath && [vscode.Uri.file(fontPath.replace(/\/[^\/]*$/, ""))]
         }
     );
     // Get path to resource on disk
@@ -341,6 +357,10 @@ function openPanel(id, force) {
     panel.webview.html = fs.readFileSync(onDiskPath.fsPath, 'utf8');
     panel.webview.onDidReceiveMessage(message => {
         if (typeof message !== "object" || process_connection === null) return;
+        if (message.getFontPath === true && fontPath !== null) {
+            panel.webview.postMessage({fontPath: panel.webview.asWebviewUri(vscode.Uri.file(fontPath)).toString(), fontScale: customFont.get("scale")});
+            return;
+        }
         var data = Buffer.alloc(message.data.length / 2 + 2);
         data[0] = message.type;
         data[1] = id;
@@ -383,6 +403,10 @@ function activate(context) {
     });
 
     let disposable2 = vscode.commands.registerCommand('craftos-pc.open-window', function () {
+        if (process_connection === null) {
+            vscode.window.showErrorMessage("Please open CraftOS-PC before using this command.");
+            return;
+        }
         vscode.window.showInputBox({prompt: "Enter the window ID:", validateInput: str => isNaN(parseInt(str)) ? "Invalid number" : null}).then(value => openPanel(parseInt(value)));
     });
 
@@ -409,7 +433,30 @@ function activate(context) {
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.close', function() {
-        if (process_connection !== null) process_connection.stdin.write("!CPC000CBAACAAAAAAAA3AB9B910\n", "utf8");
+        if (process_connection === null) {
+            vscode.window.showErrorMessage("Please open CraftOS-PC before using this command.");
+            return;
+        }
+        process_connection.stdin.write("!CPC000CBAACAAAAAAAA3AB9B910\n", "utf8");
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand("craftos-pc.close-window", (obj) => {
+        if (process_connection === null) {
+            vscode.window.showErrorMessage("Please open CraftOS-PC before using this command.");
+            return;
+        }
+        let id;
+        if (typeof obj === "object") id = new Promise((resolve) => resolve(obj.id));
+        else id = vscode.window.showInputBox({prompt: "Enter the window ID:", validateInput: str => isNaN(parseInt(str)) ? "Invalid number" : null});
+        id.then((id) => {
+            const data = Buffer.alloc(9);
+            data.fill(0);
+            data[0] = 4;
+            data[1] = parseInt(id);
+            data[2] = 1;
+            const b64 = data.toString("base64");
+            process_connection.stdin.write("!CPC000C" + b64 + ("0000000" + crc32(b64).toString(16)).slice(-8) + "\n");
+        })
     }));
 
     computer_tree = vscode.window.createTreeView("craftos-computers", {"treeDataProvider": computer_provider});

@@ -45,6 +45,14 @@
 			{
 				"command": "craftos-pc.close",
 				"title": "CraftOS-PC: Close Session"
+			},
+			{
+				"command": "craftos-pc.close-window",
+				"title": "CraftOS-PC: Close Window With ID",
+				"icon": {
+					"light": "media/close-light.svg",
+					"dark": "media/close-dark.svg"
+				}
 			}
 		],
 		"viewsContainers": {
@@ -65,6 +73,15 @@
 				{
 					"id": "craftos-monitors",
 					"name": "Monitors"
+				}
+			]
+		},
+		"menus": {
+			"view/item/context": [
+				{
+					"command": "craftos-pc.close-window",
+					"when": "view == craftos-computers || view == craftos-monitors",
+					"group": "inline"
 				}
 			]
 		},
@@ -105,6 +122,18 @@
 					"type": "string",
 					"default": null,
 					"description": "Additional command-line arguments to pass to CraftOS-PC.",
+					"scope": "machine-overridable"
+				},
+				"craftos-pc.customFont.path": {
+					"type": "string",
+					"default": null,
+					"description": "The path to a custom font, if desired. Must be a path to a valid image, or 'hdfont' to automatically find the HD font.",
+					"scope": "machine-overridable"
+				},
+				"craftos-pc.customFont.scale": {
+					"type": "integer",
+					"default": 0,
+					"description": "If a custom font path is set, the scale of the font (1 = 12x18, 2 = 6x9, etc.).",
 					"scope": "machine-overridable"
 				}
 			}
