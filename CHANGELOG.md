@@ -5,6 +5,9 @@ All notable changes to the "craftos-pc" extension will be documented in this fil
 ## 1.0.1
 
 * Fixed mouse events not being sent to the window
+* Fixed wrong mouse buttons being sent
+* Fixed drag coordinates in the margins of the screen
+* Fixed mouse drag events firing in the same cell after click
 
 ## 1.0.0
 
