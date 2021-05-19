@@ -82,7 +82,7 @@ const monitor_provider = {
     },
     getTreeItem: element => {
         let r = new vscode.TreeItem(element.title);
-        r.iconPath = vscode.Uri.file(path.join(extcontext.extensionPath, 'media/computer.svg'));
+        r.iconPath = vscode.Uri.file(path.join(extcontext.extensionPath, 'media/monitor.svg'));
         r.command = {command: "craftos-pc.open-window", title: "CraftOS-PC: Open Window", arguments: [element]};
         return r;
     },
@@ -368,7 +368,7 @@ function openPanel(id, force) {
     );
     // Get path to resource on disk
     const onDiskPath = vscode.Uri.file(path.join(extcontext.extensionPath, 'index.html'));
-    panel.iconPath = vscode.Uri.file(path.join(extcontext.extensionPath, 'media/computer.svg'));
+    panel.iconPath = windows[id] && windows[id].isMonitor ? vscode.Uri.file(path.join(extcontext.extensionPath, 'media/monitor.svg')) : vscode.Uri.file(path.join(extcontext.extensionPath, 'media/computer.svg'));
     panel.webview.html = fs.readFileSync(onDiskPath.fsPath, 'utf8');
     panel.webview.onDidReceiveMessage(message => {
         if (typeof message !== "object" || process_connection === null) return;
