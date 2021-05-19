@@ -1,23 +1,20 @@
-# CraftOS-PC for VS Code README (alpha)
+# CraftOS-PC for VS Code README
 
 An extension for Visual Studio Code adding a bunch of new features to help you write ComputerCraft code easier through CraftOS-PC.
-
-**This is an alpha version - expect some bugs and missing features.**
 
 ## Features
 
 * Support for built-in CraftOS-PC terminals in VS Code
-* Adds new commands to quickly open computer data folders or configuration files
-* More?
+* Quickly access computer data directories and the configuration
 
 ![Screenshot](media/screenshot.png)
 
 ## Requirements
 
 * CraftOS-PC v2.3 or later (https://www.craftos-pc.cc)
-  * If using more than one terminal, CraftOS-PC v2.4 or later is required due to a bug in earlier versions causing multiple terminals to get the same ID
-  * If on Windows, make sure to install the console version as well under Optional components in the installer
+  * **If on Windows, make sure to install the console version as well under Optional components in the installer**
   * If installed in a non-standard directory (such as in your user directory), make sure to set `craftos-pc.executablePath` in the settings
+  * If using more than one terminal, CraftOS-PC v2.4 or later is required due to a bug in earlier versions causing multiple terminals to get the same ID
 
 ## Recommended Extensions
 
@@ -31,13 +28,31 @@ This extension contributes the following settings:
 * `craftos-pc.executablePath.[windows|mac|linux|all]`: Path to the CraftOS-PC executable depending on the platform. This should be an absolute path to an executable supporting console output (on Windows, this must be pointing to a copy of `CraftOS-PC_console.exe`, which is optionally available in the installer).
 * `craftos-pc.dataPath`: Path to the data directory storing computer files, configuration, etc.
 * `craftos-pc.additionalArguments`: Additional command-line arguments to send to CraftOS-PC, separated by spaces.
+* `craftos-pc.customFont.path`: The path to a custom font, if desired. Must be a path to a valid image, or 'hdfont' to automatically find the HD font. Unlike normal CraftOS-PC, this may point to non-BMP files as well.
 
 ## Known Issues
 
-* Switching to another tab and back may cause keyboard input to stop working.
-  * Workaround: Switch windows and back to make the keyboard work again.
+* If a non-default size is set for terminals, this extension will not function. A fix to allow resizing terminals will be available in the future.
+* Occasionally, keyboard input will stop working. To fix this, click outside the CraftOS-PC window and then back in.
 
 ## Release Notes
+
+## 1.0.0
+
+* Added support for custom fonts
+  * Font files must be in the exact same format as ComputerCraft fonts (with the same outer padding area)
+* Added close buttons to each window, as well as a global quit button
+* Added buttons to open a new window with the selected computer's data directory
+  * This requires either CraftOS-PC v2.5.6 or later, or computers labeled "Computer &gt;id&lt;"
+* Added button to open the configuration
+* Added paste event detection
+* Added icons for monitors
+* Updated extension icon to CraftOS-PC v2.4's new icon
+* Fixed duplicate drag events being sent for the same character cell
+* Fixed mouse events sending the wrong coordinates
+* Fixed the computer background not being drawn properly
+* Upgraded y18n and lodash to fix vulnerabilities (#3, #4)
+* Reformatted code to be a bit more clean
 
 ### 0.2.1
 

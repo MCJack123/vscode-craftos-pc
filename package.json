@@ -2,7 +2,7 @@
 	"name": "craftos-pc",
 	"displayName": "CraftOS-PC for VS Code",
 	"description": "Adds the ability to open CraftOS-PC windows inside VS Code, as well as some ease-of-use functionality to make ComputerCraft programming easier.",
-	"version": "0.2.1",
+	"version": "1.0.0",
 	"engines": {
 		"vscode": "^1.41.0"
 	},
@@ -17,7 +17,6 @@
 	],
 	"author": {"name": "JackMacWindows"},
 	"publisher": "JackMacWindows",
-	"preview": true,
 	"repository": {"type": "git", "url": "https://github.com/MCJack123/vscode-craftos-pc"},
 	"icon": "media/icon.png",
 	"activationEvents": [
@@ -44,7 +43,11 @@
 			},
 			{
 				"command": "craftos-pc.open-config",
-				"title": "CraftOS-PC: Open Configuration"
+				"title": "CraftOS-PC: Open Configuration",
+				"icon": {
+					"light": "media/settings-light.svg",
+					"dark": "media/settings-dark.svg"
+				}
 			},
 			{
 				"command": "craftos-pc.close",
@@ -95,19 +98,24 @@
 				{
 					"command": "craftos-pc.open-computer-data",
 					"when": "view == craftos-computers && viewItem == data-available",
-					"group": "inline"
+					"group": "inline@1"
 				},
 				{
 					"command": "craftos-pc.close-window",
 					"when": "view == craftos-computers || view == craftos-monitors",
-					"group": "inline"
+					"group": "inline@2"
 				}
 			],
 			"view/title": [
 				{
+					"command": "craftos-pc.open-config",
+					"when": "view == craftos-computers",
+					"group": "navigation@1"
+				},
+				{
 					"command": "craftos-pc.close",
 					"when": "view == craftos-computers",
-					"group": "navigation"
+					"group": "navigation@2"
 				}
 			]
 		},
@@ -154,12 +162,6 @@
 					"type": "string",
 					"default": null,
 					"description": "The path to a custom font, if desired. Must be a path to a valid image, or 'hdfont' to automatically find the HD font.",
-					"scope": "machine-overridable"
-				},
-				"craftos-pc.customFont.scale": {
-					"type": "integer",
-					"default": 0,
-					"description": "If a custom font path is set, the scale of the font (1 = 12x18, 2 = 6x9, etc.).",
 					"scope": "machine-overridable"
 				}
 			}

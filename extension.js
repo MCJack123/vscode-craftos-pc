@@ -95,7 +95,7 @@ var data_continuation = null;
 
 function getSetting(name) {
     const config = vscode.workspace.getConfiguration(name);
-    if (config.get("all") !== null) return config.get("all");
+    if (config.get("all") !== null && config.get("all") !== "") return config.get("all");
     else if (os.platform() === "win32") return config.get("windows").replace(/%([^%]+)%/g, (_, n) => process.env[n] || ('%' + n + '%'));
     else if (os.platform() === "darwin") return config.get("mac").replace(/\$(\w+)/g, (_, n) => process.env[n] || ('$' + n)).replace(/\${([^}]+)}/g, (_, n) => process.env[n] || ('${' + n + '}'));
     else if (os.platform() === "linux") return config.get("linux").replace(/\$(\w+)/g, (_, n) => process.env[n] || ('$' + n)).replace(/\${([^}]+)}/g, (_, n) => process.env[n] || ('${' + n + '}'));
@@ -104,7 +104,7 @@ function getSetting(name) {
 
 function getDataPath() {
     const config = vscode.workspace.getConfiguration("craftos-pc");
-    if (config.get("dataPath") !== null) return config.get("dataPath");
+    if (config.get("dataPath") !== null && config.get("dataPath") !== "") return config.get("dataPath");
     else if (os.platform() === "win32") return "%appdata%\\CraftOS-PC".replace(/%([^%]+)%/g, (_, n) => process.env[n] || ('%' + n + '%'));
     else if (os.platform() === "darwin") return "$HOME/Library/Application Support/CraftOS-PC".replace(/\$(\w+)/g, (_, n) => process.env[n] || ('$' + n)).replace(/\${([^}]+)}/g, (_, n) => process.env[n] || ('${' + n + '}'))
     else if (os.platform() === "linux") return "$HOME/.local/craftos-pc".replace(/\$(\w+)/g, (_, n) => process.env[n] || ('$' + n)).replace(/\${([^}]+)}/g, (_, n) => process.env[n] || ('${' + n + '}'))
@@ -343,17 +343,15 @@ function openPanel(id, force) {
     }
     const customFont = vscode.workspace.getConfiguration("craftos-pc.customFont");
     let fontPath = customFont.get("path");
-    if (fontPath !== null) {
-        if (fontPath === "hdfont") {
-            const execPath = getSetting("craftos-pc.executablePath");
-            if (os.platform() === "win32") fontPath = execPath.replace(/\/[^\/]+$/, "/") + "hdfont.bmp";
-            else if (os.platform() === "darwin" && execPath.indexOf("MacOS/craftos") !== -1) fontPath = execPath.replace(/MacOS\/[^\/]+$/, "") + "Resources/hdfont.bmp";
-            else if (os.platform() === "darwin" || (os.platform() === "linux" && !fs.existsSync("/usr/share/craftos/hdfont.bmp"))) fontPath = "/usr/local/share/craftos/hdfont.bmp";
-            else if (os.platform() === "linux") fontPath = "/usr/share/craftos/hdfont.bmp";
-            if (!fs.existsSync(fontPath)) {
-                vscode.window.showWarningMessage("The path to the HD font could not be found; the default font will be used instead. Please set the path to the HD font manually.");
-                fontPath = null;
-            }
+    if (fontPath === "hdfont") {
+        const execPath = getSetting("craftos-pc.executablePath");
+        if (os.platform() === "win32") fontPath = execPath.replace(/\/[^\/]+$/, "/") + "hdfont.bmp";
+        else if (os.platform() === "darwin" && execPath.indexOf("MacOS/craftos") !== -1) fontPath = execPath.replace(/MacOS\/[^\/]+$/, "") + "Resources/hdfont.bmp";
+        else if (os.platform() === "darwin" || (os.platform() === "linux" && !fs.existsSync("/usr/share/craftos/hdfont.bmp"))) fontPath = "/usr/local/share/craftos/hdfont.bmp";
+        else if (os.platform() === "linux") fontPath = "/usr/share/craftos/hdfont.bmp";
+        if (!fs.existsSync(fontPath)) {
+            vscode.window.showWarningMessage("The path to the HD font could not be found; the default font will be used instead. Please set the path to the HD font manually.");
+            fontPath = null;
         }
     }
     const panel = vscode.window.createWebviewPanel(
@@ -363,7 +361,7 @@ function openPanel(id, force) {
         {
             enableScripts: true,
             retainContextWhenHidden: true,
-            localResourceRoots: fontPath && [vscode.Uri.file(fontPath.replace(/\/[^\/]*$/, ""))]
+            localResourceRoots: (fontPath !== null && fontPath !== "") ? [vscode.Uri.file(fontPath.replace(/\/[^\/]*$/, ""))] : null
         }
     );
     // Get path to resource on disk
@@ -372,8 +370,8 @@ function openPanel(id, force) {
     panel.webview.html = fs.readFileSync(onDiskPath.fsPath, 'utf8');
     panel.webview.onDidReceiveMessage(message => {
         if (typeof message !== "object" || process_connection === null) return;
-        if (message.getFontPath === true && fontPath !== null) {
-            panel.webview.postMessage({fontPath: panel.webview.asWebviewUri(vscode.Uri.file(fontPath)).toString(), fontScale: customFont.get("scale")});
+        if (message.getFontPath === true) {
+            if (fontPath !== null && fontPath !== "") panel.webview.postMessage({fontPath: panel.webview.asWebviewUri(vscode.Uri.file(fontPath)).toString()});
             return;
         }
         const data = Buffer.alloc(message.data.length / 2 + 2);

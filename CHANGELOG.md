@@ -2,6 +2,23 @@
 
 All notable changes to the "craftos-pc" extension will be documented in this file.
 
+## 1.0.0
+
+* Added support for custom fonts
+  * Font files must be in the exact same format as ComputerCraft fonts (with the same outer padding area)
+* Added close buttons to each window, as well as a global quit button
+* Added buttons to open a new window with the selected computer's data directory
+  * This requires either CraftOS-PC v2.5.6 or later, or computers labeled "Computer &gt;id&lt;"
+* Added button to open the configuration
+* Added paste event detection
+* Added icons for monitors
+* Updated extension icon to CraftOS-PC v2.4's new icon
+* Fixed duplicate drag events being sent for the same character cell
+* Fixed mouse events sending the wrong coordinates
+* Fixed the computer background not being drawn properly
+* Upgraded y18n and lodash to fix vulnerabilities (#3, #4)
+* Reformatted code to be a bit more clean
+
 ## 0.2.1
 
 * Added an error message if the executable is missing
