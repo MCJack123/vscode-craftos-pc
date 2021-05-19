@@ -2,6 +2,10 @@
 
 All notable changes to the "craftos-pc" extension will be documented in this file.
 
+## 1.0.1
+
+* Fixed mouse events not being sent to the window
+
 ## 1.0.0
 
 * Added support for custom fonts

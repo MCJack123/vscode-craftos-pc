@@ -34,8 +34,13 @@ This extension contributes the following settings:
 
 * If a non-default size is set for terminals, this extension will not function. A fix to allow resizing terminals will be available in the future.
 * Occasionally, keyboard input will stop working. To fix this, click outside the CraftOS-PC window and then back in.
+* Scroll events do not report the position of the scroll. This is a limitation of JavaScript.
 
 ## Release Notes
+
+## 1.0.1
+
+* Fixed mouse events not being sent to the window
 
 ## 1.0.0
 
