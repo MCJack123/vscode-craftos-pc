@@ -3,6 +3,8 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const process = require('process');
+const URL = require('url').URL;
+const WebSocket = require('ws');
 const child_process = require('child_process');
 const { SIGINT } = require('constants');
 
@@ -118,6 +120,172 @@ function closeAllWindows() {
     monitor_provider._onDidChangeTreeData.fire(null);
 }
 
+function processDataChunk(chunk) {
+    if (typeof chunk === "string") chunk = new Buffer(chunk, "utf8");
+    if (data_continuation !== null) {
+        chunk = Buffer.concat([data_continuation, chunk]);
+        data_continuation = null;
+    }
+    if (chunk.subarray(0, 4).toString() !== "!CPC") {
+        console.error("Invalid message");
+        return;
+    }
+    const size = parseInt(chunk.subarray(4, 8).toString(), 16);
+    if (size > chunk.length + 16) {
+        data_continuation = chunk;
+        return;
+    }
+    const data = Buffer.from(chunk.subarray(8, size + 8).toString(), 'base64');
+    const good_checksum = parseInt(chunk.subarray(size + 8, size + 16).toString(), 16);
+    const data_checksum = crc32(chunk.subarray(8, size + 8).toString());
+    if (good_checksum !== data_checksum) {
+        console.error("Bad checksum: expected " + good_checksum.toString(16) + ", got " + data_checksum.toString(16));
+        return;
+    }
+    let term = {}
+    const stream = bufferstream(data);
+    const type = stream.get();
+    const id = stream.get();
+    let winid = null;
+    if (type === 0) {
+        term.mode = stream.get();
+        term.blink = stream.get() === 1;
+        term.width = stream.readUInt16();
+        term.height = stream.readUInt16();
+        term.cursorX = stream.readUInt16();
+        term.cursorY = stream.readUInt16();
+        stream.readUInt32();
+        term.screen = {}
+        term.colors = {}
+        term.pixels = {}
+        if (term.mode === 0) {
+            let c = stream.get();
+            let n = stream.get();
+            for (let y = 0; y < term.height; y++) {
+                term.screen[y] = {}
+                for (let x = 0; x < term.width; x++) {
+                    term.screen[y][x] = c;
+                    n--;
+                    if (n === 0) {
+                        c = stream.get();
+                        n = stream.get();
+                    }
+                }
+            }
+            for (let y = 0; y < term.height; y++) {
+                term.colors[y] = {}
+                for (let x = 0; x < term.width; x++) {
+                    term.colors[y][x] = c;
+                    n--;
+                    if (n === 0) {
+                        c = stream.get();
+                        n = stream.get();
+                    }
+                }
+            }
+            stream.putback();
+            stream.putback();
+        } else if (term.mode === 1 || term.mode === 2) {
+            let c = stream.get();
+            let n = stream.get();
+            for (let y = 0; y < term.height * 9; y++) {
+                term.pixels[y] = {}
+                for (let x = 0; x < term.width * 6; x++) {
+                    term.pixels[y][x] = c;
+                    n--;
+                    if (n === 0) {
+                        c = stream.get();
+                        n = stream.get();
+                    }
+                }
+            }
+            stream.putback();
+            stream.putback();
+        }
+        term.palette = {}
+        if (term.mode === 0 || term.mode === 1) {
+            for (let i = 0; i < 16; i++) {
+                term.palette[i] = {}
+                term.palette[i].r = stream.get();
+                term.palette[i].g = stream.get();
+                term.palette[i].b = stream.get();
+            }
+        } else if (term.mode === 2) {
+            for (let i = 0; i < 256; i++) {
+                term.palette[i] = {}
+                term.palette[i].r = stream.get();
+                term.palette[i].g = stream.get();
+                term.palette[i].b = stream.get();
+            }
+        }
+    } else if (type === 4) {
+        const type2 = stream.get();
+        if (type2 === 2) {
+            if (process_connection.connected) {
+                process_connection.stdin.write("\n", "utf8");
+                process_connection.disconnect();
+            } else {
+                process_connection.kill(SIGINT);
+                //vscode.window.showWarningMessage("The CraftOS-PC worker process did not close correctly. Some changes may not have been saved.")
+            }
+            closeAllWindows();
+            return;
+        } else if (type2 === 1) {
+            if (windows[id].panel !== undefined) windows[id].panel.dispose();
+            delete windows[id];
+            computer_provider._onDidChangeTreeData.fire(null);
+            monitor_provider._onDidChangeTreeData.fire(null);
+            return;
+        } else if (type2 === 0) {
+            winid = stream.get();
+            term.width = stream.readUInt16();
+            term.height = stream.readUInt16();
+            term.title = "";
+            for (let c = stream.get(); c !== 0; c = stream.get()) term.title += String.fromCharCode(c);
+            if (windows[id] !== undefined) {
+                windows[id].isMonitor = typeof term.title === "string" && term.title.indexOf("Monitor") !== -1;
+                if (winid > 0) {
+                    windows[id].computerID = winid - 1;
+                    windows[id].isMonitor = false;
+                } else if (typeof term.title === "string" && term.title.match(/Computer \d+$/)) {
+                    windows[id].computerID = parseInt(windows[id].term.title.match(/Computer (\d+)$/)[1]);
+                }
+            }
+        }
+    } else if (type === 5) {
+        const flags = stream.readUInt32();
+        let title = "";
+        for (let c = stream.get(); c !== 0; c = stream.get()) title += String.fromCharCode(c);
+        let message = "";
+        for (let c = stream.get(); c !== 0; c = stream.get()) message += String.fromCharCode(c);
+        switch (flags) {
+            case 0x10: vscode.window.showErrorMessage("CraftOS-PC: " + title + ": " + message); break;
+            case 0x20: vscode.window.showWarningMessage("CraftOS-PC: " + title + ": " + message); break;
+            case 0x40: vscode.window.showInformationMessage("CraftOS-PC: " + title + ": " + message); break;
+        }
+    }
+    if (windows[id] === undefined) windows[id] = {};
+    if (windows[id].term === undefined) windows[id].term = {};
+    for (let k in term) windows[id].term[k] = term[k];
+    if (windows[id].isMonitor === undefined) {
+        windows[id].isMonitor = typeof windows[id].term.title === "string" && windows[id].term.title.indexOf("Monitor") !== -1;
+        if (winid !== null && winid > 0) {
+            windows[id].computerID = winid - 1;
+            windows[id].isMonitor = false;
+        } else if (typeof windows[id].term.title === "string" && windows[id].term.title.match(/Computer \d+$/)) {
+            windows[id].computerID = parseInt(windows[id].term.title.match(/Computer (\d+)$/)[1]);
+        }
+    }
+    if (windows[id].panel !== undefined) {
+        windows[id].panel.webview.postMessage(windows[id].term);
+        windows[id].panel.title = windows[id].term.title || "CraftOS-PC Terminal";
+    }
+    if (type === 4) {
+        computer_provider._onDidChangeTreeData.fire(null);
+        monitor_provider._onDidChangeTreeData.fire(null);
+    }
+}
+
 function connectToProcess() {
     if (process_connection !== null) return true;
     const exe_path = getSetting("craftos-pc.executablePath");
@@ -164,175 +332,40 @@ function connectToProcess() {
         process_connection = null;
         closeAllWindows();
     });
-    process_connection.stdout.on("data", chunk => {
-        if (data_continuation !== null) {
-            chunk = Buffer.concat([data_continuation, chunk]);
-            data_continuation = null;
-        }
-        if (chunk.subarray(0, 4).toString() !== "!CPC") {
-            console.error("Invalid message");
-            return;
-        }
-        const size = parseInt(chunk.subarray(4, 8).toString(), 16);
-        if (size > chunk.length + 16) {
-            data_continuation = chunk;
-            return;
-        }
-        const data = Buffer.from(chunk.subarray(8, size + 8).toString(), 'base64');
-        const good_checksum = parseInt(chunk.subarray(size + 8, size + 16).toString(), 16);
-        const data_checksum = crc32(chunk.subarray(8, size + 8).toString());
-        if (good_checksum !== data_checksum) {
-            console.error("Bad checksum: expected " + good_checksum.toString(16) + ", got " + data_checksum.toString(16));
-            return;
-        }
-        let term = {}
-        const stream = bufferstream(data);
-        const type = stream.get();
-        const id = stream.get();
-        let winid = null;
-        if (type === 0) {
-            term.mode = stream.get();
-            term.blink = stream.get() === 1;
-            term.width = stream.readUInt16();
-            term.height = stream.readUInt16();
-            term.cursorX = stream.readUInt16();
-            term.cursorY = stream.readUInt16();
-            stream.readUInt32();
-            term.screen = {}
-            term.colors = {}
-            term.pixels = {}
-            if (term.mode === 0) {
-                let c = stream.get();
-                let n = stream.get();
-                for (let y = 0; y < term.height; y++) {
-                    term.screen[y] = {}
-                    for (let x = 0; x < term.width; x++) {
-                        term.screen[y][x] = c;
-                        n--;
-                        if (n === 0) {
-                            c = stream.get();
-                            n = stream.get();
-                        }
-                    }
-                }
-                for (let y = 0; y < term.height; y++) {
-                    term.colors[y] = {}
-                    for (let x = 0; x < term.width; x++) {
-                        term.colors[y][x] = c;
-                        n--;
-                        if (n === 0) {
-                            c = stream.get();
-                            n = stream.get();
-                        }
-                    }
-                }
-                stream.putback();
-                stream.putback();
-            } else if (term.mode === 1 || term.mode === 2) {
-                let c = stream.get();
-                let n = stream.get();
-                for (let y = 0; y < term.height * 9; y++) {
-                    term.pixels[y] = {}
-                    for (let x = 0; x < term.width * 6; x++) {
-                        term.pixels[y][x] = c;
-                        n--;
-                        if (n === 0) {
-                            c = stream.get();
-                            n = stream.get();
-                        }
-                    }
-                }
-                stream.putback();
-                stream.putback();
-            }
-            term.palette = {}
-            if (term.mode === 0 || term.mode === 1) {
-                for (let i = 0; i < 16; i++) {
-                    term.palette[i] = {}
-                    term.palette[i].r = stream.get();
-                    term.palette[i].g = stream.get();
-                    term.palette[i].b = stream.get();
-                }
-            } else if (term.mode === 2) {
-                for (let i = 0; i < 256; i++) {
-                    term.palette[i] = {}
-                    term.palette[i].r = stream.get();
-                    term.palette[i].g = stream.get();
-                    term.palette[i].b = stream.get();
-                }
-            }
-        } else if (type === 4) {
-            const type2 = stream.get();
-            if (type2 === 2) {
-                if (process_connection.connected) {
-                    process_connection.stdin.write("\n", "utf8");
-                    process_connection.disconnect();
-                } else {
-                    process_connection.kill(SIGINT);
-                    //vscode.window.showWarningMessage("The CraftOS-PC worker process did not close correctly. Some changes may not have been saved.")
-                }
-                closeAllWindows();
-                return;
-            } else if (type2 === 1) {
-                if (windows[id].panel !== undefined) windows[id].panel.dispose();
-                delete windows[id];
-                computer_provider._onDidChangeTreeData.fire(null);
-                monitor_provider._onDidChangeTreeData.fire(null);
-                return;
-            } else if (type2 === 0) {
-                winid = stream.get();
-                term.width = stream.readUInt16();
-                term.height = stream.readUInt16();
-                term.title = "";
-                for (let c = stream.get(); c !== 0; c = stream.get()) term.title += String.fromCharCode(c);
-                if (windows[id] !== undefined) {
-                    windows[id].isMonitor = typeof term.title === "string" && term.title.indexOf("Monitor") !== -1;
-                    if (winid > 0) {
-                        windows[id].computerID = winid - 1;
-                        windows[id].isMonitor = false;
-                    } else if (typeof windows[id].term.title === "string" && windows[id].term.title.match(/Computer \d+$/)) {
-                        windows[id].computerID = parseInt(windows[id].term.title.match(/Computer (\d+)$/)[1]);
-                    }
-                }
-            }
-        } else if (type === 5) {
-            const flags = stream.readUInt32();
-            let title = "";
-            for (let c = stream.get(); c !== 0; c = stream.get()) title += String.fromCharCode(c);
-            let message = "";
-            for (let c = stream.get(); c !== 0; c = stream.get()) message += String.fromCharCode(c);
-            switch (flags) {
-                case 0x10: vscode.window.showErrorMessage("CraftOS-PC: " + title + ": " + message); break;
-                case 0x20: vscode.window.showWarningMessage("CraftOS-PC: " + title + ": " + message); break;
-                case 0x40: vscode.window.showInformationMessage("CraftOS-PC: " + title + ": " + message); break;
-            }
-        }
-        if (windows[id] === undefined) windows[id] = {};
-        if (windows[id].term === undefined) windows[id].term = {};
-        for (let k in term) windows[id].term[k] = term[k];
-        if (windows[id].isMonitor === undefined) {
-            windows[id].isMonitor = typeof windows[id].term.title === "string" && windows[id].term.title.indexOf("Monitor") !== -1;
-            if (winid !== null && winid > 0) {
-                windows[id].computerID = winid - 1;
-                windows[id].isMonitor = false;
-            } else if (typeof windows[id].term.title === "string" && windows[id].term.title.match(/Computer \d+$/)) {
-                windows[id].computerID = parseInt(windows[id].term.title.match(/Computer (\d+)$/)[1]);
-            }
-        }
-        if (windows[id].panel !== undefined) {
-            windows[id].panel.webview.postMessage(windows[id].term);
-            windows[id].panel.title = windows[id].term.title || "CraftOS-PC Terminal";
-        }
-        if (type === 4) {
-            computer_provider._onDidChangeTreeData.fire(null);
-            monitor_provider._onDidChangeTreeData.fire(null);
-        }
-    });
+    process_connection.stdout.on("data", processDataChunk);
     process_connection.stderr.on('data', data => {
         console.error(data.toString());
     });
     vscode.window.showInformationMessage("A new CraftOS-PC worker process has been started.");
     openPanel(0, true);
+}
+
+function connectToWebSocket(url) {
+    if (process_connection !== null || url === undefined) return true;
+    const socket = new WebSocket(url);
+    // We insert a small shim here so we don't have to rewrite the other code.
+    process_connection = {
+        connected: socket.readyState == WebSocket.OPEN,
+        disconnect: () => socket.close(),
+        kill: () => socket.close(),
+        stdin: {write: data => socket.send(data)}
+    };
+    socket.on("open", () => {
+        vscode.window.showInformationMessage("Successfully connected to the WebSocket server.");
+        process_connection.connected = true;
+        openPanel(0, true);
+    });
+    socket.on("error", e => {
+        vscode.window.showErrorMessage("An error occurred while connecting to the server: " + e.message);
+        process_connection = null;
+        closeAllWindows();
+    });
+    socket.on("close", () => {
+        vscode.window.showInformationMessage("Disconnected from the WebSocket server.");
+        process_connection = null;
+        closeAllWindows();
+    });
+    socket.on("message", processDataChunk);
 }
 
 function openPanel(id, force) {
@@ -345,7 +378,7 @@ function openPanel(id, force) {
     let fontPath = customFont.get("path");
     if (fontPath === "hdfont") {
         const execPath = getSetting("craftos-pc.executablePath");
-        if (os.platform() === "win32") fontPath = execPath.replace(/\/[^\/]+$/, "/") + "hdfont.bmp";
+        if (os.platform() === "win32") fontPath = execPath.replace(/[\/\\][^\/\\]+$/, "/") + "hdfont.bmp";
         else if (os.platform() === "darwin" && execPath.indexOf("MacOS/craftos") !== -1) fontPath = execPath.replace(/MacOS\/[^\/]+$/, "") + "Resources/hdfont.bmp";
         else if (os.platform() === "darwin" || (os.platform() === "linux" && !fs.existsSync("/usr/share/craftos/hdfont.bmp"))) fontPath = "/usr/local/share/craftos/hdfont.bmp";
         else if (os.platform() === "linux") fontPath = "/usr/share/craftos/hdfont.bmp";
@@ -361,7 +394,7 @@ function openPanel(id, force) {
         {
             enableScripts: true,
             retainContextWhenHidden: true,
-            localResourceRoots: (fontPath !== null && fontPath !== "") ? [vscode.Uri.file(fontPath.replace(/\/[^\/]*$/, ""))] : null
+            localResourceRoots: (fontPath !== null && fontPath !== "") ? [vscode.Uri.file(fontPath.replace(/[\/\\][^\/\\]*$/, ""))] : null
         }
     );
     // Get path to resource on disk
@@ -409,6 +442,15 @@ function activate(context) {
     extcontext = context;
 
     context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open', connectToProcess));
+
+    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-websocket', () => {
+        vscode.window.showInputBox({prompt: "Enter the WebSocket URL:", validateInput: str => {
+            try {
+                let url = new URL(str);
+                return url.protocol.toLowerCase() == "ws:" || url.protocol.toLowerCase() == "wss:" ? null : "Invalid URL";
+            } catch (e) {return "Invalid URL";}
+        }}).then(connectToWebSocket);
+    }));
 
     context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-window', obj => {
         if (process_connection === null) {
@@ -465,7 +507,7 @@ function activate(context) {
             data[1] = parseInt(id);
             data[2] = 1;
             const b64 = data.toString("base64");
-            process_connection.stdin.write("!CPC000C" + b64 + ("0000000" + crc32(b64).toString(16)).slice(-8) + "\n");
+            process_connection.stdin.write("!CPC000C" + b64 + ("0000000" + crc32(b64).toString(16)).slice(-8) + "\n", "utf8");
         });
     }));
 

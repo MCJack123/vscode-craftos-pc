@@ -15,9 +15,14 @@
 		"terminal",
 		"craftos-pc"
 	],
-	"author": {"name": "JackMacWindows"},
+	"author": {
+		"name": "JackMacWindows"
+	},
 	"publisher": "JackMacWindows",
-	"repository": {"type": "git", "url": "https://github.com/MCJack123/vscode-craftos-pc"},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/MCJack123/vscode-craftos-pc"
+	},
 	"icon": "media/icon.png",
 	"activationEvents": [
 		"onStartupFinished"
@@ -28,6 +33,10 @@
 			{
 				"command": "craftos-pc.open",
 				"title": "CraftOS-PC: Start Session"
+			},
+			{
+				"command": "craftos-pc.open-websocket",
+				"title": "CraftOS-PC: Open WebSocket Connection..."
 			},
 			{
 				"command": "craftos-pc.open-window",
@@ -90,7 +99,7 @@
 		"viewsWelcome": [
 			{
 				"view": "craftos-computers",
-				"contents": "You must start CraftOS-PC before using this tab.\n[Start CraftOS-PC](command:craftos-pc.open)"
+				"contents": "You must start CraftOS-PC before using this tab.\n[Start CraftOS-PC](command:craftos-pc.open)\n[Open WebSocket...](command:craftos-pc.open-websocket)"
 			}
 		],
 		"menus": {
@@ -182,5 +191,8 @@
 		"mocha": "^7.0.1",
 		"typescript": "^3.7.5",
 		"vscode-test": "^1.3.0"
+	},
+	"dependencies": {
+		"ws": "^7.4.6"
 	}
 }
