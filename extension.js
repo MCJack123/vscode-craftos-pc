@@ -101,6 +101,7 @@ var data_continuation = null;
 var fs_provider = null;
 var nextDataRequestID = 0;
 var dataRequestCallbacks = {};
+var isVersion11 = false;
 var useBinaryChecksum = false;
 var supportsFilesystem = false;
 
@@ -140,7 +141,7 @@ function queueDataRequest(id, type, path, path2) {
     Buffer.from(path).copy(data, 4);
     if (typeof path2 == "string") Buffer.from(path2).copy(data, 5 + path.length);
     const b64 = data.toString('base64');
-    const packet = "!CPC" + ("000" + b64.length.toString(16)).slice(-4) + b64 + ("0000000" + crc32(b64).toString(16)).slice(-8) + "\n";
+    const packet = "!CPC" + ("000" + b64.length.toString(16)).slice(-4) + b64 + ("0000000" + crc32(useBinaryChecksum ? data.toString("binary") : b64).toString(16)).slice(-8) + "\n";
     process_connection.stdin.write(packet, 'utf8');
     if ((type & 0xF1) == 0x11) {
         const data2 = Buffer.alloc(8 + path2.length);
@@ -151,7 +152,7 @@ function queueDataRequest(id, type, path, path2) {
         data2.writeInt32LE(path2.length, 4);
         path2.copy(data2, 8);
         const b642 = data2.toString('base64');
-        const packet2 = "!CPC" + ("000" + b642.length.toString(16)).slice(-4) + b642 + ("0000000" + crc32(b642).toString(16)).slice(-8) + "\n";
+        const packet2 = (data2.length > 65535 ? "!CPD" + ("00000000000" + b642.length.toString(16)).slice(-12) : "!CPC" + ("000" + b642.length.toString(16)).slice(-4)) + b642 + ("0000000" + crc32(useBinaryChecksum ? data2.toString("binary") : b642).toString(16)).slice(-8) + "\n";
         process_connection.stdin.write(packet2, 'utf8');
     }
     return new Promise((resolve, reject) => {
@@ -302,18 +303,21 @@ function processDataChunk(chunk) {
         data_continuation = null;
     }
     while (chunk.length > 0) {
-        if (chunk.subarray(0, 4).toString() !== "!CPC") {
+        let off;
+        if (chunk.subarray(0, 4).toString() === "!CPC") off = 8;
+        else if (chunk.subarray(0, 4).toString() === "!CPD" && isVersion11) off = 16;
+        else {
             console.error("Invalid message");
             return;
         }
-        const size = parseInt(chunk.subarray(4, 8).toString(), 16);
+        const size = parseInt(chunk.subarray(4, off).toString(), 16);
         if (size > chunk.length + 9) {
             data_continuation = chunk;
             return;
         }
-        const data = Buffer.from(chunk.subarray(8, size + 8).toString(), 'base64');
-        const good_checksum = parseInt(chunk.subarray(size + 8, size + 16).toString(), 16);
-        const data_checksum = crc32(chunk.subarray(8, size + 8).toString());
+        const data = Buffer.from(chunk.subarray(off, size + off).toString(), 'base64');
+        const good_checksum = parseInt(chunk.subarray(size + off, size + off + 8).toString(), 16);
+        const data_checksum = crc32(useBinaryChecksum ? data.toString("binary") : chunk.subarray(off, size + off).toString());
         if (good_checksum !== data_checksum) {
             console.error("Bad checksum: expected " + good_checksum.toString(16) + ", got " + data_checksum.toString(16));
             chunk = chunk.subarray(size + 16);
@@ -445,10 +449,9 @@ function processDataChunk(chunk) {
             }
         } else if (type === 6) {
             const flags = stream.readUInt16();
-            console.log("Got flags: " + flags);
+            isVersion11 = true;
             useBinaryChecksum = (flags & 1) === 1;
             supportsFilesystem = (flags & 2) === 2;
-            computer_provider._onDidChangeTreeData.fire(null);
         } else if (type === 8) {
             const reqtype = stream.get();
             const reqid = stream.get();
@@ -507,7 +510,6 @@ function processDataChunk(chunk) {
                     for (let c = stream.get(); c !== 0; c = stream.get()) str += String.fromCharCode(c);
                     if (str === "") dataRequestCallbacks[reqid]();
                     else dataRequestCallbacks[reqid](null, new Error(str));
-                    computer_provider._onDidChangeTreeData.fire(null);
                     break;
                 }
             }
@@ -548,7 +550,7 @@ function processDataChunk(chunk) {
             computer_provider._onDidChangeTreeData.fire(null);
             monitor_provider._onDidChangeTreeData.fire(null);
         }
-        chunk = chunk.subarray(size + 16);
+        chunk = chunk.subarray(size + off + 8);
         while (String.fromCharCode(chunk[0]).match(/\s/)) chunk = chunk.subarray(1);
     }
 }
@@ -603,8 +605,8 @@ function connectToProcess() {
     process_connection.stderr.on('data', data => {
         console.error(data.toString());
     });
-    process_connection.stdin.write("!CPC0008BgACAA==FBAC4FC2\n"); // 0x0002
-    //process_connection.stdin.write("!CPC0008BgADAA==498C93D2\n"); // 0x0003
+    //process_connection.stdin.write("!CPC0008BgACAA==FBAC4FC2\n"); // 0x0002
+    process_connection.stdin.write("!CPC0008BgADAA==498C93D2\n"); // 0x0003
     //process_connection.stdin.write("!CPC0008BgAGAA==0E2CE902\n"); // 0x0006
     //process_connection.stdin.write("!CPC0008BgAHAA==8C7C7ED3\n"); // 0x0007
     vscode.window.showInformationMessage("A new CraftOS-PC worker process has been started.");
@@ -624,8 +626,8 @@ function connectToWebSocket(url) {
     socket.on("open", () => {
         //socket.send("!CPC0008BgACAA==FBAC4FC2\n"); // 0x0002
         //socket.send("!CPC0008BgADAA==498C93D2\n"); // 0x0003
-        socket.send("!CPC0008BgAGAA==0E2CE902\n"); // 0x0006
-        //socket.send("!CPC0008BgAHAA==8C7C7ED3\n"); // 0x0007
+        //socket.send("!CPC0008BgAGAA==0E2CE902\n"); // 0x0006
+        socket.send("!CPC0008BgAHAA==8C7C7ED3\n"); // 0x0007
         vscode.window.showInformationMessage("Successfully connected to the WebSocket server.");
         process_connection.connected = true;
         openPanel(0, true);
@@ -672,6 +674,7 @@ function openPanel(id, force) {
             localResourceRoots: (fontPath !== null && fontPath !== "") ? [vscode.Uri.file(fontPath.replace(/[\/\\][^\/\\]*$/, ""))] : null
         }
     );
+    extcontext.subscriptions.push(panel);
     // Get path to resource on disk
     const onDiskPath = vscode.Uri.file(path.join(extcontext.extensionPath, 'index.html'));
     panel.iconPath = windows[id] && windows[id].isMonitor ? vscode.Uri.file(path.join(extcontext.extensionPath, 'media/monitor.svg')) : vscode.Uri.file(path.join(extcontext.extensionPath, 'media/computer.svg'));
@@ -687,7 +690,7 @@ function openPanel(id, force) {
         data[1] = id;
         Buffer.from(message.data, 'hex').copy(data, 2)
         const b64 = data.toString('base64');
-        const packet = "!CPC" + ("000" + b64.length.toString(16)).slice(-4) + b64 + ("0000000" + crc32(b64).toString(16)).slice(-8) + "\n";
+        const packet = "!CPC" + ("000" + b64.length.toString(16)).slice(-4) + b64 + ("0000000" + crc32(useBinaryChecksum ? data.toString("binary") : b64).toString(16)).slice(-8) + "\n";
         process_connection.stdin.write(packet, 'utf8');
     });
     panel.onDidChangeViewState(e => {
@@ -766,6 +769,21 @@ function activate(context) {
         } else if (!supportsFilesystem) {
             vscode.window.showErrorMessage("This connection does not support file system access.");
             return;
+        } else if (!vscode.workspace.workspaceFile) {
+            vscode.window.showWarningMessage("Due to technical limitations, opening the computer data will cause the connection to close. Please restart the connection after running this. Are you sure you want to continue?", "No", "Yes").then(opt => {
+                if (opt === "No") return;
+                // haha code duplication goes brrrrr
+                if (typeof obj === "object") {
+                    deactivate();
+                    vscode.workspace.updateWorkspaceFolders(vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders.length : 0, null, {name: obj.title.replace(/^.*: */, ""), uri: vscode.Uri.parse(`craftos-pc://${obj.id}/`)});
+                } else {
+                    vscode.window.showInputBox({prompt: "Enter the window ID:", validateInput: str => isNaN(parseInt(str)) ? "Invalid number" : null}).then(value => {
+                        if (typeof windows[value] !== "object") vscode.window.showErrorMessage("The window ID provided does not exist.");
+                        else vscode.workspace.updateWorkspaceFolders(vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders.length : 0, null, {name: windows[value].title.replace(/^.*: */, ""), uri: vscode.Uri.parse(`craftos-pc://${value}/`)});
+                    });
+                }
+            });
+            return;
         }
         if (typeof obj === "object") {
             vscode.workspace.updateWorkspaceFolders(vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders.length : 0, null, {name: obj.title.replace(/^.*: */, ""), uri: vscode.Uri.parse(`craftos-pc://${obj.id}/`)});
@@ -782,7 +800,7 @@ function activate(context) {
             vscode.window.showErrorMessage("Please open CraftOS-PC before using this command.");
             return;
         }
-        process_connection.stdin.write("!CPC000CBAACAAAAAAAA3AB9B910\n", "utf8");
+        process_connection.stdin.write(useBinaryChecksum ? "!CPC000CBAACAAAAAAAA2C7A548B\n" : "!CPC000CBAACAAAAAAAA3AB9B910\n", "utf8");
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand("craftos-pc.close-window", obj => {
@@ -800,7 +818,7 @@ function activate(context) {
             data[1] = parseInt(id);
             data[2] = 1;
             const b64 = data.toString("base64");
-            process_connection.stdin.write("!CPC000C" + b64 + ("0000000" + crc32(b64).toString(16)).slice(-8) + "\n", "utf8");
+            process_connection.stdin.write("!CPC000C" + b64 + ("0000000" + crc32(useBinaryChecksum ? data.toString("binary") : b64).toString(16)).slice(-8) + "\n", "utf8");
         });
     }));
 
@@ -815,7 +833,7 @@ exports.activate = activate;
 function deactivate() {
     if (process_connection) {
         if (process_connection.connected) {
-            process_connection.stdin.write("!CPC000CBAACAAAAAAAA3AB9B910\n\n", "utf8");
+            process_connection.stdin.write(useBinaryChecksum ? "!CPC000CBAACAAAAAAAA2C7A548B\n" : "!CPC000CBAACAAAAAAAA3AB9B910\n", "utf8");
             process_connection.disconnect();
         } else {
             process_connection.kill(SIGINT);
