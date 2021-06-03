@@ -51,6 +51,14 @@
 				}
 			},
 			{
+				"command": "craftos-pc.open-remote-data",
+				"title": "CraftOS-PC: Open Remote Data for Window...",
+				"icon": {
+					"light": "media/remote-explorer-light.svg",
+					"dark": "media/remote-explorer-dark.svg"
+				}
+			},
+			{
 				"command": "craftos-pc.open-config",
 				"title": "CraftOS-PC: Open Configuration",
 				"icon": {
@@ -105,7 +113,7 @@
 		"menus": {
 			"view/item/context": [
 				{
-					"command": "craftos-pc.open-computer-data",
+					"command": "craftos-pc.open-remote-data",
 					"when": "view == craftos-computers && viewItem == data-available",
 					"group": "inline@1"
 				},

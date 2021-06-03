@@ -225,6 +225,8 @@
                 }
             }
             var ctx = null, ctxdata = null;
+            var lastterm = null;
+            var blink = false;
             function render(term) {
                 if (typeof term !== "object") return;
                 if (typeof term.fontPath === "string") {
@@ -235,11 +237,12 @@
                 }
                 if (term.palette === undefined || ctx == null || ctxdata == null || font == null) return;
                 lastMode = term.mode;
+                lastterm = term;
                 if (term.mode == 0) {
                     for (let y = 0; y < term.height; y++)
                         for (let x = 0; x < term.width; x++)
                             drawChar(ctxdata, term.screen[y][x], x, y, term.palette[term.colors[y][x] & 0x0f], term.palette[term.colors[y][x] >> 4]);
-                    if (term.blink) drawChar(ctxdata, "_".charCodeAt(0), term.cursorX, term.cursorY, term.palette[term.colors[term.cursorY][term.cursorX] & 0x0f], term.palette[term.colors[term.cursorY][term.cursorX] >> 4], true);
+                    if (term.blink && blink) drawChar(ctxdata, "_".charCodeAt(0), term.cursorX, term.cursorY, term.palette[term.colors[term.cursorY][term.cursorX] & 0x0f], term.palette[term.colors[term.cursorY][term.cursorX] >> 4], true);
                 } else if (term.mode == 1 || term.mode == 2) {
                     for (let y = 0; y < term.height * 9; y++) {
                         for (let x = 0; x < term.width * 6; x++) {
@@ -375,6 +378,10 @@
             document.addEventListener("visibilitychange", () => document.getElementById("pastebox").focus());
             document.addEventListener("click", () => document.getElementById("pastebox").focus());
             document.getElementById("pastebox").focus();
+            setInterval(() => {
+                blink = !blink;
+                if (lastterm && lastterm.blink) render(lastterm);
+            }, 400);
         </script>
     </body>
 </html>
