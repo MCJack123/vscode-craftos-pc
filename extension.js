@@ -104,6 +104,7 @@ var dataRequestCallbacks = {};
 var isVersion11 = false;
 var useBinaryChecksum = false;
 var supportsFilesystem = false;
+var gotMessage = false;
 
 function getSetting(name) {
     const config = vscode.workspace.getConfiguration(name);
@@ -328,6 +329,8 @@ function processDataChunk(chunk) {
         const stream = bufferstream(data);
         const type = stream.get();
         const id = stream.get();
+        if (!gotMessage && type == 4) process_connection.stdin.write("!CPC0008BgADAA==498C93D2\n"); // 0x0003
+        gotMessage = true;
         let winid = null;
         if (type === 0) {
             term.mode = stream.get();
@@ -611,6 +614,7 @@ function connectToProcess() {
     //process_connection.stdin.write("!CPC0008BgAHAA==8C7C7ED3\n"); // 0x0007
     vscode.window.showInformationMessage("A new CraftOS-PC worker process has been started.");
     openPanel(0, true);
+    gotMessage = false;
 }
 
 function connectToWebSocket(url) {
@@ -643,6 +647,7 @@ function connectToWebSocket(url) {
         closeAllWindows();
     });
     socket.on("message", processDataChunk);
+    gotMessage = false;
 }
 
 function openPanel(id, force) {
@@ -721,7 +726,8 @@ function activate(context) {
 
     context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open', connectToProcess));
 
-    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-websocket', () => {
+    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-websocket', obj => {
+        if (typeof obj === "string") return connectToWebSocket(obj);
         vscode.window.showInputBox({prompt: "Enter the WebSocket URL:", validateInput: str => {
             try {
                 let url = new URL(str);
@@ -823,6 +829,9 @@ function activate(context) {
     }));
 
     context.subscriptions.push(vscode.workspace.registerFileSystemProvider("craftos-pc", new RawFileSystemProvider()));
+    context.subscriptions.push(vscode.window.registerUriHandler({handleUri: uri => {
+        vscode.commands.executeCommand("craftos-pc.open-websocket", uri.path.replace(/^\//, ""));
+    }}));
 
     vscode.window.createTreeView("craftos-computers", {"treeDataProvider": computer_provider});
     vscode.window.createTreeView("craftos-monitors", {"treeDataProvider": monitor_provider});
