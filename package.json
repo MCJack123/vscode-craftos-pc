@@ -39,6 +39,10 @@
 				"title": "CraftOS-PC: Open WebSocket Connection..."
 			},
 			{
+				"command": "craftos-pc.open-new-remote",
+				"title": "CraftOS-PC: Open New remote.craftos-pc.cc Session"
+			},
+			{
 				"command": "craftos-pc.open-window",
 				"title": "CraftOS-PC: Open Window with ID..."
 			},
@@ -107,7 +111,7 @@
 		"viewsWelcome": [
 			{
 				"view": "craftos-computers",
-				"contents": "You must start CraftOS-PC before using this tab.\n[Start CraftOS-PC](command:craftos-pc.open)\n[Open WebSocket...](command:craftos-pc.open-websocket)"
+				"contents": "You must start CraftOS-PC before using this tab.\n[Start CraftOS-PC](command:craftos-pc.open)\n[Open WebSocket...](command:craftos-pc.open-websocket)\n[Connect to Remote](command:craftos-pc.open-new-remote)"
 			}
 		],
 		"menus": {

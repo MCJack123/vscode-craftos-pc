@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const process = require('process');
+const https = require('https');
 const URL = require('url').URL;
 const WebSocket = require('ws');
 const child_process = require('child_process');
@@ -455,6 +456,7 @@ function processDataChunk(chunk) {
             isVersion11 = true;
             useBinaryChecksum = (flags & 1) === 1;
             supportsFilesystem = (flags & 2) === 2;
+            computer_provider._onDidChangeTreeData.fire(null);
         } else if (type === 8) {
             const reqtype = stream.get();
             const reqid = stream.get();
@@ -615,6 +617,12 @@ function connectToProcess() {
     vscode.window.showInformationMessage("A new CraftOS-PC worker process has been started.");
     openPanel(0, true);
     gotMessage = false;
+    data_continuation = null;
+    nextDataRequestID = 0;
+    dataRequestCallbacks = {};
+    isVersion11 = false;
+    useBinaryChecksum = false;
+    supportsFilesystem = false;
 }
 
 function connectToWebSocket(url) {
@@ -648,6 +656,12 @@ function connectToWebSocket(url) {
     });
     socket.on("message", processDataChunk);
     gotMessage = false;
+    data_continuation = null;
+    nextDataRequestID = 0;
+    dataRequestCallbacks = {};
+    isVersion11 = false;
+    useBinaryChecksum = false;
+    supportsFilesystem = false;
 }
 
 function openPanel(id, force) {
@@ -724,9 +738,19 @@ function activate(context) {
 
     extcontext = context;
 
-    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open', connectToProcess));
+    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open', () => {
+        if (process_connection !== null) {
+            vscode.window.showErrorMessage("Please close the current connection before using this command.");
+            return;
+        }
+        return connectToProcess();
+    }));
 
     context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-websocket', obj => {
+        if (process_connection !== null) {
+            vscode.window.showErrorMessage("Please close the current connection before using this command.");
+            return;
+        }
         if (typeof obj === "string") return connectToWebSocket(obj);
         vscode.window.showInputBox({prompt: "Enter the WebSocket URL:", validateInput: str => {
             try {
@@ -734,6 +758,28 @@ function activate(context) {
                 return url.protocol.toLowerCase() == "ws:" || url.protocol.toLowerCase() == "wss:" ? null : "Invalid URL";
             } catch (e) {return "Invalid URL";}
         }}).then(connectToWebSocket);
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-new-remote', () => {
+        if (process_connection !== null) {
+            vscode.window.showErrorMessage("Please close the current connection before using this command.");
+            return;
+        }
+        https.get("https://remote.craftos-pc.cc/new", res => {
+            if (Math.floor(res.statusCode / 100) !== 2) {
+                vscode.window.showErrorMessage("Could not connect to remote.craftos-pc.cc: HTTP " + res.statusCode);
+                res.resume();
+                return;
+            }
+            res.setEncoding('utf8');
+            let id = "";
+            res.on('data', chunk => id += chunk);
+            res.on('end', () => {
+                vscode.env.clipboard.writeText("wget run https://remote.craftos-pc.cc/server.lua " + id);
+                vscode.window.showInformationMessage("A command has been copied to the clipboard. Paste that into the ComputerCraft computer to establish the connection.");
+                connectToWebSocket("wss://remote.craftos-pc.cc/" + id);
+            });
+        }).on('error', e => vscode.window.showErrorMessage("Could not connect to remote.craftos-pc.cc: " + e.message));
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-window', obj => {
@@ -844,8 +890,10 @@ function deactivate() {
         if (process_connection.connected) {
             process_connection.stdin.write(useBinaryChecksum ? "!CPC000CBAACAAAAAAAA2C7A548B\n" : "!CPC000CBAACAAAAAAAA3AB9B910\n", "utf8");
             process_connection.disconnect();
+            if (process_connection.isWS) process_connection = null;
         } else {
             process_connection.kill(SIGINT);
+            if (process_connection.isWS) process_connection = null;
         }
     }
     closeAllWindows();
