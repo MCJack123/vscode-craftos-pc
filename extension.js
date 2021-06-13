@@ -99,13 +99,13 @@ monitor_provider.onDidChangeTreeData = monitor_provider._onDidChangeTreeData.eve
 
 var process_connection = null;
 var data_continuation = null;
-var fs_provider = null;
 var nextDataRequestID = 0;
 var dataRequestCallbacks = {};
 var isVersion11 = false;
 var useBinaryChecksum = false;
 var supportsFilesystem = false;
 var gotMessage = false;
+var didShowBetaMessage = false;
 
 function getSetting(name) {
     const config = vscode.workspace.getConfiguration(name);
@@ -764,6 +764,10 @@ function activate(context) {
         if (process_connection !== null) {
             vscode.window.showErrorMessage("Please close the current connection before using this command.");
             return;
+        }
+        if (!didShowBetaMessage) {
+            vscode.window.showWarningMessage("remote.craftos-pc.cc is currently in beta. Be aware that things may not work as expected. If you run into issues, please report them [on GitHub](https://github.com/MCJack123/remote.craftos-pc.cc/issues). If things break, use Shift+Ctrl+P (Shift+Cmd+P on Mac), then type 'reload window' and press Enter.");
+            didShowBetaMessage = true;
         }
         https.get("https://remote.craftos-pc.cc/new", res => {
             if (Math.floor(res.statusCode / 100) !== 2) {

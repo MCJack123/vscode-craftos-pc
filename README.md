@@ -6,6 +6,9 @@ An extension for Visual Studio Code adding a bunch of new features to help you w
 
 * Support for built-in CraftOS-PC terminals in VS Code
 * Quickly access computer data directories and the configuration
+* Browse files on the connected computer in the current workspace
+* Connect to CraftOS-PC raw mode WebSocket servers
+* Use the remote.craftos-pc.cc service to open any ComputerCraft computer in VS Code (beta)
 
 ![Screenshot](media/screenshot.png)
 
@@ -14,7 +17,8 @@ An extension for Visual Studio Code adding a bunch of new features to help you w
 * CraftOS-PC v2.3 or later (https://www.craftos-pc.cc)
   * **If on Windows, make sure to install the console version as well under Optional components in the installer**
   * If installed in a non-standard directory (such as in your user directory), make sure to set `craftos-pc.executablePath` in the settings
-  * If using more than one terminal, CraftOS-PC v2.4 or later is required due to a bug in earlier versions causing multiple terminals to get the same ID
+  * See "Known issues" for caveats for certain CraftOS-PC versions
+  * If you only want to use remote.craftos-pc.cc, you do not have to install CraftOS-PC
 
 ## Recommended Extensions
 
@@ -35,8 +39,21 @@ This extension contributes the following settings:
 * If a non-default size is set for terminals, this extension will not function. A fix to allow resizing terminals will be available in the future.
 * Occasionally, keyboard input will stop working. To fix this, click outside the CraftOS-PC window and then back in.
 * Scroll events do not report the position of the scroll. This is a limitation of JavaScript.
+* Some versions of CraftOS-PC have bugs that interfere with the functioning of this extension:
+  * Filesystem access only works on CraftOS-PC v2.5.6 or later, or any server implementing raw mode 1.1 or later.
+  * v2.5.4-v2.5.5: Creating a new window results in a crash. This is fixed in v2.5.6.
+  * v2.5.1-v2.5.1.1: CraftOS-PC often crashes in raw mode on these versions. This is fixed in v2.5.2.
+  * v2.3-v2.3.4: All events are sent to the first window, and all windows have the same ID. This is fixed in v2.4.
 
 ## Release Notes
+
+## 1.1.0
+
+* Added ability to connect to WebSocket servers
+* Added integration with new remote.craftos-pc.cc service (beta)
+* Added support for raw mode 1.1 specification
+* Added URI handler for WebSocket links
+* Fixed security vulnerability in glob-parent dependency
 
 ## 1.0.2
 

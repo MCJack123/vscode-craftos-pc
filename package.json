@@ -2,7 +2,7 @@
 	"name": "craftos-pc",
 	"displayName": "CraftOS-PC for VS Code",
 	"description": "Adds the ability to open CraftOS-PC windows inside VS Code, as well as some ease-of-use functionality to make ComputerCraft programming easier.",
-	"version": "1.0.2",
+	"version": "1.1.0",
 	"engines": {
 		"vscode": "^1.41.0"
 	},
@@ -111,7 +111,7 @@
 		"viewsWelcome": [
 			{
 				"view": "craftos-computers",
-				"contents": "You must start CraftOS-PC before using this tab.\n[Start CraftOS-PC](command:craftos-pc.open)\n[Open WebSocket...](command:craftos-pc.open-websocket)\n[Connect to Remote](command:craftos-pc.open-new-remote)"
+				"contents": "You must start CraftOS-PC before using this tab.\n[Start CraftOS-PC](command:craftos-pc.open)\n[Open WebSocket...](command:craftos-pc.open-websocket)\n[Connect to Remote (Beta)](command:craftos-pc.open-new-remote)"
 			}
 		],
 		"menus": {

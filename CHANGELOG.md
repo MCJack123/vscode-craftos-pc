@@ -2,6 +2,14 @@
 
 All notable changes to the "craftos-pc" extension will be documented in this file.
 
+## 1.1.0
+
+* Added ability to connect to WebSocket servers
+* Added integration with new remote.craftos-pc.cc service (beta)
+* Added support for raw mode 1.1 specification
+* Added URI handler for WebSocket links
+* Fixed security vulnerability in glob-parent dependency
+
 ## 1.0.2
 
 * Fixed wrong mouse buttons being sent
