@@ -2,6 +2,10 @@
 
 All notable changes to the "craftos-pc" extension will be documented in this file.
 
+## 1.1.1
+
+* Fixed mouse_up event not being sent
+
 ## 1.1.0
 
 * Added ability to connect to WebSocket servers

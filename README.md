@@ -40,12 +40,16 @@ This extension contributes the following settings:
 * Occasionally, keyboard input will stop working. To fix this, click outside the CraftOS-PC window and then back in.
 * Scroll events do not report the position of the scroll. This is a limitation of JavaScript.
 * Some versions of CraftOS-PC have bugs that interfere with the functioning of this extension:
-  * Filesystem access only works on CraftOS-PC v2.5.6 or later, or any server implementing raw mode 1.1 or later.
-  * v2.5.4-v2.5.5: Creating a new window results in a crash. This is fixed in v2.5.6.
+  * Filesystem access only works on CraftOS-PC v2.6 or later, or any server implementing raw mode 1.1 or later.
+  * v2.5.4-v2.5.5: Creating a new window results in a crash. This is fixed in v2.6.
   * v2.5.1-v2.5.1.1: CraftOS-PC often crashes in raw mode on these versions. This is fixed in v2.5.2.
   * v2.3-v2.3.4: All events are sent to the first window, and all windows have the same ID. This is fixed in v2.4.
 
 ## Release Notes
+
+## 1.1.1
+
+* Fixed mouse_up event not being sent
 
 ## 1.1.0
 

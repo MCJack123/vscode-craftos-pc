@@ -318,7 +318,7 @@
             events.mouse_up = e => {
                 e.stopPropagation();
                 e.preventDefault();
-                if (lastMode == 0) sendPacket(2, "01" + pack8(getmouse(e.which)) + pack32(Mgetx(e.offsetX)) + pack32(gety(e.offsetY)));
+                if (lastMode == 0) sendPacket(2, "01" + pack8(getmouse(e.which)) + pack32(getx(e.offsetX)) + pack32(gety(e.offsetY)));
                 else if (lastMode == 1 || lastMode == 2) sendPacket(2, "01" + pack8(getmouse(e.which)) + pack32(getx(e.offsetX)) + pack32(gety(e.offsetY)));
             }
             events.mouse_scroll = e => {
