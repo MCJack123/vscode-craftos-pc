@@ -645,7 +645,12 @@ function connectToWebSocket(url) {
         openPanel(0, true);
     });
     socket.on("error", e => {
-        vscode.window.showErrorMessage("An error occurred while connecting to the server: " + e.message);
+        if (e.message.match("certificate has expired"))
+            vscode.window.showErrorMessage("A bug in VS Code is causing the connection to fail. Please go to https://www.craftos-pc.cc/docs/remote#certificate-has-expired-error to fix it.", "Open Page", "OK").then(res => {
+                if (res === "OK") return;
+                vscode.env.openExternal(vscode.Uri.parse("https://www.craftos-pc.cc/docs/remote#certificate-has-expired-error"));
+            });
+        else vscode.window.showErrorMessage("An error occurred while connecting to the server: " + e.message);
         process_connection = null;
         closeAllWindows();
     });
