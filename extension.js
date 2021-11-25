@@ -436,7 +436,7 @@ function processDataChunk(chunk) {
                         windows[id].computerID = winid - 1;
                         windows[id].isMonitor = false;
                     } else if (typeof term.title === "string" && term.title.match(/Computer \d+$/)) {
-                        windows[id].computerID = parseInt(windows[id].term.title.match(/Computer (\d+)$/)[1]);
+                        windows[id].computerID = parseInt(term.title.match(/Computer (\d+)$/)[1]);
                     }
                 }
             }
@@ -881,6 +881,16 @@ function activate(context) {
             const b64 = data.toString("base64");
             process_connection.stdin.write("!CPC000C" + b64 + ("0000000" + crc32(useBinaryChecksum ? data.toString("binary") : b64).toString(16)).slice(-8) + "\n", "utf8");
         });
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand("craftos-pc.kill", () => {
+        if (process_connection === null) {
+            vscode.window.showErrorMessage("Please open CraftOS-PC before using this command.");
+            return;
+        }
+        process_connection.stdin.write(useBinaryChecksum ? "!CPC000CBAACAAAAAAAA2C7A548B\n" : "!CPC000CBAACAAAAAAAA3AB9B910\n", "utf8");
+        process_connection.kill(SIGINT);
+        process_connection = null;
     }));
 
     context.subscriptions.push(vscode.workspace.registerFileSystemProvider("craftos-pc", new RawFileSystemProvider()));

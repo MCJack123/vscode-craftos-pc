@@ -47,6 +47,12 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+## 1.1.3
+
+* Added more information about VS Code "certificate has expired" bug
+* Added a "CraftOS-PC: Force Close Connection" to close the connection immediately without waiting for a response
+* Fixed an issue causing remote screens to go black
+
 ## 1.1.1
 
 * Fixed mouse_up event not being sent
