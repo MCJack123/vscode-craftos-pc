@@ -788,7 +788,14 @@ function activate(context) {
                 vscode.window.showInformationMessage("A command has been copied to the clipboard. Paste that into the ComputerCraft computer to establish the connection.");
                 connectToWebSocket("wss://remote.craftos-pc.cc/" + id);
             });
-        }).on('error', e => vscode.window.showErrorMessage("Could not connect to remote.craftos-pc.cc: " + e.message));
+        }).on('error', e => {
+            if (e.message.match("certificate has expired"))
+                vscode.window.showErrorMessage("A bug in VS Code is causing the connection to fail. Please go to https://www.craftos-pc.cc/docs/remote#certificate-has-expired-error to fix it.", "Open Page", "OK").then(res => {
+                    if (res === "OK") return;
+                    vscode.env.openExternal(vscode.Uri.parse("https://www.craftos-pc.cc/docs/remote#certificate-has-expired-error"));
+                });
+            else vscode.window.showErrorMessage("Could not connect to remote.craftos-pc.cc: " + e.message);
+        });
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-window', obj => {

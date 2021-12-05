@@ -227,6 +227,7 @@
             var ctx = null, ctxdata = null;
             var lastterm = null;
             var blink = false;
+            var size = {width: 51, height: 19};
             function render(term) {
                 if (typeof term !== "object") return;
                 if (typeof term.fontPath === "string") {
@@ -238,6 +239,17 @@
                 if (term.palette === undefined || ctx == null || ctxdata == null || font == null) return;
                 lastMode = term.mode;
                 lastterm = term;
+                if (size.width != term.width || size.height != term.height) {
+                    size = {width: term.width, height: term.height};
+                    const canvas = document.getElementById("terminal");
+                    canvas.width = term.width * 12 + 8;
+                    canvas.height = term.height * 18 + 8;
+                    ctx = document.getElementById("terminal").getContext("2d");
+                    ctx.fillStyle = "#111111";
+                    ctx.fillRect(0, 0, term.width * 12 + 8, term.height * 18 + 8);
+                    ctx.imageSmoothingEnabled = false;
+                    ctxdata = ctx.createImageData(term.width * 12, term.height * 18);
+                }
                 if (term.mode == 0) {
                     for (let y = 0; y < term.height; y++)
                         for (let x = 0; x < term.width; x++)

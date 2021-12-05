@@ -2,7 +2,7 @@
 	"name": "craftos-pc",
 	"displayName": "CraftOS-PC for VS Code",
 	"description": "Adds the ability to open CraftOS-PC windows inside VS Code, as well as some ease-of-use functionality to make ComputerCraft programming easier.",
-	"version": "1.1.3",
+	"version": "1.1.4",
 	"engines": {
 		"vscode": "^1.41.0"
 	},

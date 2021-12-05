@@ -2,6 +2,11 @@
 
 All notable changes to the "craftos-pc" extension will be documented in this file.
 
+## 1.1.4
+
+* Terminal windows now automatically resize to fit the screen
+* Fixed an issue causing the bug info prompt from 1.1.3 to not appear
+
 ## 1.1.3
 
 * Added more information about VS Code "certificate has expired" bug
