@@ -134,14 +134,16 @@ function closeAllWindows() {
 
 function queueDataRequest(id, type, path, path2) {
     if (process_connection === null) return new Promise((resolve, reject) => reject(new Error("Path does not exist")));
-    const data = Buffer.alloc(5 + path.length + (typeof path2 == "string" ? path2.length + 1 : 0));
+    const pathbuf = Buffer.from(path, "latin1");
+    const path2buf = (typeof path2 === "string" ? Buffer.from(path2, "latin1") : null);
+    const data = Buffer.alloc(5 + pathbuf.length + (typeof path2 === "string" ? path2buf.length + 1 : 0));
     data[0] = 7;
     data[1] = id;
     data[2] = type;
     data[3] = nextDataRequestID;
     nextDataRequestID = (nextDataRequestID + 1) & 0xFF;
-    Buffer.from(path).copy(data, 4);
-    if (typeof path2 == "string") Buffer.from(path2).copy(data, 5 + path.length);
+    pathbuf.copy(data, 4);
+    if (typeof path2 == "string") path2buf.copy(data, 5 + pathbuf.length);
     const b64 = data.toString('base64');
     const packet = "!CPC" + ("000" + b64.length.toString(16)).slice(-4) + b64 + ("0000000" + crc32(useBinaryChecksum ? data.toString("binary") : b64).toString(16)).slice(-8) + "\n";
     process_connection.stdin.write(packet, 'utf8');
