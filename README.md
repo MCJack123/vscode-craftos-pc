@@ -47,6 +47,10 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+## 1.1.5
+
+* Added history to Open WebSocket button
+
 ## 1.1.4
 
 * Terminal windows now automatically resize to fit the screen

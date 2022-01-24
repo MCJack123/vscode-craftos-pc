@@ -2,7 +2,7 @@
 	"name": "craftos-pc",
 	"displayName": "CraftOS-PC for VS Code",
 	"description": "Adds the ability to open CraftOS-PC windows inside VS Code, as well as some ease-of-use functionality to make ComputerCraft programming easier.",
-	"version": "1.1.4",
+	"version": "1.1.5",
 	"engines": {
 		"vscode": "^1.41.0"
 	},
@@ -89,6 +89,10 @@
 			{
 				"command": "craftos-pc.kill",
 				"title": "CraftOS-PC: Force Close Connection"
+			},
+			{
+				"command": "craftos-pc.clear-history",
+				"title": "CraftOS-PC: Clear WebSocket History"
 			}
 		],
 		"viewsContainers": {

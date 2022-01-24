@@ -59,6 +59,13 @@ function bufferstream(str) {
     return retval;
 }
 
+function validateURL(str) {
+    try {
+        let url = new URL(str);
+        return url.protocol.toLowerCase() == "ws:" || url.protocol.toLowerCase() == "wss:";
+    } catch (e) {return false;}
+}
+
 const computer_provider = {
     getChildren: element => {
         if ((element === undefined || element === null) && process_connection !== null) {
@@ -759,12 +766,33 @@ function activate(context) {
             return;
         }
         if (typeof obj === "string") return connectToWebSocket(obj);
-        vscode.window.showInputBox({prompt: "Enter the WebSocket URL:", validateInput: str => {
-            try {
-                let url = new URL(str);
-                return url.protocol.toLowerCase() == "ws:" || url.protocol.toLowerCase() == "wss:" ? null : "Invalid URL";
-            } catch (e) {return "Invalid URL";}
-        }}).then(connectToWebSocket);
+        let wsHistory = context.globalState.get("JackMacWindows.craftos-pc/websocket-history", [""]);
+        let quickPick = vscode.window.createQuickPick();
+        quickPick.items = wsHistory.map(val => {return {label: val}});
+        quickPick.title = "Enter the WebSocket URL:";
+        quickPick.placeholder = "wss://";
+        quickPick.canSelectMany = false;
+        quickPick.onDidChangeValue(() => {
+            wsHistory[0] = quickPick.value;
+            quickPick.items = wsHistory.map(val => {return {label: val}});
+        });
+        quickPick.onDidAccept(() => {
+            let str = quickPick.selectedItems[0].label;
+            if (!validateURL(str)) vscode.window.showErrorMessage("The URL you entered is not valid.");
+            else {
+                wsHistory[0] = str;
+                if (wsHistory.slice(1).includes(str))
+                    wsHistory.splice(wsHistory.slice(1).indexOf(str)+1, 1);
+                wsHistory.unshift("");
+                context.globalState.update("JackMacWindows.craftos-pc/websocket-history", wsHistory);
+                connectToWebSocket(str);
+            }
+        });
+        quickPick.show();
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.clear-history', () => {
+        context.globalState.update("JackMacWindows.craftos-pc/websocket-history", [""]);
     }));
 
     context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-new-remote', () => {
