@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024px" height="1024px" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 51.2 (57519) - http://www.bohemiancoding.com/sketch -->
+    <title>CraftOS-PC</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <linearGradient x1="50%" y1="3.61271676%" x2="50%" y2="100%" id="linearGradient-3">
+            <stop stop-color="#282828" offset="0%"></stop>
+            <stop stop-color="#191919" offset="100%"></stop>
+        </linearGradient>
+        <rect id="path-4" x="124" y="132" width="775" height="635" rx="75"></rect>
+        <filter x="-3.1%" y="-3.8%" width="106.2%" height="107.6%" filterUnits="objectBoundingBox" id="filter-5">
+            <feGaussianBlur stdDeviation="20" in="SourceAlpha" result="shadowBlurInner1"></feGaussianBlur>
+            <feOffset dx="10" dy="10" in="shadowBlurInner1" result="shadowOffsetInner1"></feOffset>
+            <feComposite in="shadowOffsetInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
+        </filter>
+        <radialGradient cx="50%" cy="50%" fx="50%" fy="50%" r="155.905657%" gradientTransform="translate(0.500000,0.500000),scale(0.338889,1.000000),rotate(-90.000000),scale(1.000000,0.964108),translate(-0.500000,-0.500000)" id="radialGradient-6">
+            <stop stop-color="#80bf76" offset="0%"></stop>
+            <stop stop-color="#57a64e" offset="100%"></stop>
+        </radialGradient>
+        <rect id="path-7" x="668" y="844" width="180" height="61" rx="15"></rect>
+        <filter x="-4.4%" y="-13.1%" width="108.9%" height="126.2%" filterUnits="objectBoundingBox" id="filter-8">
+            <feGaussianBlur stdDeviation="7.5" in="SourceAlpha" result="shadowBlurInner1"></feGaussianBlur>
+            <feOffset dx="0" dy="1" in="shadowBlurInner1" result="shadowOffsetInner1"></feOffset>
+            <feComposite in="shadowOffsetInner1" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="shadowInnerInner1"></feComposite>
+            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.5 0" type="matrix" in="shadowInnerInner1"></feColorMatrix>
+        </filter>
+    </defs>
+    <mask id="mask">
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <path d="M 307.9 25 C 258.3 25 223.8 27.5 197 32.6 C 173.8 37.1 156.4 43.5 136.3 54.3 C 100.9 73.2 73.2 100.9 54.3 136.3 C 43.5 156.4 37.1 173.8 32.6 197 C 27.5 223.8 25 258.6 25 307.9 L 25 716.1 C 25 765.4 27.5 800.2 32.6 827 C 37.1 850.2 43.5 867.6 54.3 887.7 C 73.2 923.1 100.9 950.8 136.3 969.7 C 156.4 980.5 173.8 986.9 197 991.4 C 223.8 996.5 258.6 999 307.9 999 L 741.1 999 C 765.4 999 800.2 996.5 827 991.4 C 850.2 986.9 867.6 980.5 887.7 969.7 C 923.1 950.8 950.8 923.1 969.7 887.7 C 980.5 867.6 986.9 850.2 991.4 827 C 996.5 800.2 999 765.4 999 716.1 L 999 307.9 C 999 258.6 996.5 223.8 991.4 197 C 986.9 173.8 980.5 156.4 969.7 136.3 C 950.8 100.9 923.1 73.2 887.7 54.3 C 867.6 43.5 850.2 37.1 827 32.6 C 800.2 27.5 765.4 25 716.1 25 L 307.9 25 Z" id="Combined-Shape" stroke="url(#radialGradient-2)" stroke-width="50" fill="white"></path>
+        <g id="Rectangle">
+            <use transform="matrix(1,0,0,1,0,0)" fill="black" fill-rule="evenodd" xlink:href="#path-4"></use>
+        </g>
+        <g id="Group" transform="translate(191,204)" fill="white">
+            <rect id="Rectangle-3-Copy" x="0" y="0" width="56" height="56"></rect>
+            <rect id="Rectangle-3-Copy-2" x="56" y="56" width="56" height="56"></rect>
+            <rect id="Rectangle-3-Copy-3" x="0" y="113" width="56" height="56"></rect>
+            <rect id="Rectangle-3-Copy-6" x="169" y="113" width="56" height="56"></rect>
+            <rect id="Rectangle-3-Copy-7" x="224" y="113" width="56" height="56"></rect>
+        </g>
+        <g id="Rectangle-4">
+            <use transform="matrix(1,0,0,1,0,0)" fill="black" fill-rule="evenodd" xlink:href="#path-7"></use>
+        </g>
+    </g>
+    </mask>
+    <rect x="0" y="0" width="1024" height="1024" mask="url(#mask)" fill="#dddddd" />
+</svg>

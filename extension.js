@@ -291,6 +291,7 @@ class RawFileSystemProvider {
         // unimplemented
         if (process_connection === null) throw vscode.FileSystemError.Unavailable("Computer connection not open yet");
         if (!supportsFilesystem) throw vscode.FileSystemError.Unavailable("Connected computer doesn't support filesystems");
+        return null;
     }
     /**
      * @param {vscode.Uri} uri 
@@ -569,7 +570,7 @@ function processDataChunk(chunk) {
     }
 }
 
-function connectToProcess() {
+function connectToProcess(extra_args) {
     if (process_connection !== null) return true;
     const exe_path = getSetting("craftos-pc.executablePath");
     if (exe_path === null) {
@@ -588,6 +589,8 @@ function connectToProcess() {
     if (args !== null) {args = args.split(' '); args.push("--raw");}
     else args = ["--raw"];
     if (dir !== null) args.splice(-1, 0, "-d", dir);
+    if (extra_args !== null) args = args.concat(extra_args);
+    console.log("Running: " + exe_path + " " + args.join(" "));
     try {
         process_connection = child_process.spawn(exe_path, args, process_options);
     } catch (e) {
@@ -928,6 +931,25 @@ function activate(context) {
         process_connection.stdin.write(useBinaryChecksum ? "!CPC000CBAACAAAAAAAA2C7A548B\n" : "!CPC000CBAACAAAAAAAA3AB9B910\n", "utf8");
         process_connection.kill(SIGINT);
         process_connection = null;
+    }));
+
+    context.subscriptions.push(vscode.commands.registerCommand("craftos-pc.run-file", path => {
+        if (process_connection === null) {
+            if (!path) {
+                if (vscode.window.activeTextEditor === undefined || vscode.window.activeTextEditor.document.uri.scheme !== "file") {
+                    vscode.window.showErrorMessage("Please open or save a file on disk before using this command.");
+                    return;
+                }
+                path = vscode.window.activeTextEditor.document.uri.fsPath;
+            } else if (typeof path === "object" && path instanceof vscode.Uri) {
+                if (path.scheme !== "file") {
+                    vscode.window.showErrorMessage("Please open or save a file on disk before using this command.");
+                    return;
+                }
+                path = path.fsPath;
+            }
+            return connectToProcess(["--script", path]);
+        } else vscode.window.showErrorMessage("Please close CraftOS-PC before using this command.");
     }));
 
     context.subscriptions.push(vscode.workspace.registerFileSystemProvider("craftos-pc", new RawFileSystemProvider()));

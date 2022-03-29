@@ -2,6 +2,10 @@
 
 All notable changes to the "craftos-pc" extension will be documented in this file.
 
+## 1.1.6
+
+* Added Run Script button to quickly run files in a new CraftOS-PC instance
+
 ## 1.1.5
 
 * Added history to Open WebSocket button

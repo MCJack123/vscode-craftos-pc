@@ -6,6 +6,7 @@ An extension for Visual Studio Code adding a bunch of new features to help you w
 
 * Support for built-in CraftOS-PC terminals in VS Code
 * Quickly access computer data directories and the configuration
+* Run ComputerCraft Lua scripts in CraftOS-PC
 * Browse files on the connected computer in the current workspace
 * Connect to CraftOS-PC raw mode WebSocket servers
 * Use the remote.craftos-pc.cc service to open any ComputerCraft computer in VS Code (beta)
@@ -36,8 +37,7 @@ This extension contributes the following settings:
 
 ## Known Issues
 
-* If a non-default size is set for terminals, this extension will not function. A fix to allow resizing terminals will be available in the future.
-* Occasionally, keyboard input will stop working. To fix this, click outside the CraftOS-PC window and then back in.
+* Occasionally, keyboard input may stop working. To fix this, click outside the CraftOS-PC window and then back in.
 * Scroll events do not report the position of the scroll. This is a limitation of JavaScript.
 * Some versions of CraftOS-PC have bugs that interfere with the functioning of this extension:
   * Filesystem access only works on CraftOS-PC v2.6 or later, or any server implementing raw mode 1.1 or later.
@@ -46,6 +46,10 @@ This extension contributes the following settings:
   * v2.3-v2.3.4: All events are sent to the first window, and all windows have the same ID. This is fixed in v2.4.
 
 ## Release Notes
+
+## 1.1.6
+
+* Added Run Script button to quickly run files in a new CraftOS-PC instance
 
 ## 1.1.5
 
