@@ -2,7 +2,7 @@
 
 All notable changes to the "craftos-pc" extension will be documented in this file.
 
-## 1.1.7
+## 1.1.8
 
 * Fixed a bug causing disconnections when sending large data packets
 
