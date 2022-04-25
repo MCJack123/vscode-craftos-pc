@@ -645,7 +645,7 @@ function connectToWebSocket(url) {
         connected: socket.readyState == WebSocket.OPEN,
         disconnect: () => socket.close(),
         kill: () => socket.close(),
-        stdin: {write: data => socket.send(data)}
+        stdin: {write: data => {for (let i = 0; i < data.length; i += 65536) socket.send(data.substr(i, Math.min(i + 65536, data.length)))}}
     };
     socket.on("open", () => {
         //socket.send("!CPC0008BgACAA==FBAC4FC2\n"); // 0x0002

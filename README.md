@@ -47,6 +47,10 @@ This extension contributes the following settings:
 
 ## Release Notes
 
+## 1.1.7
+
+* Fixed a bug causing disconnections when sending large data packets
+
 ## 1.1.6
 
 * Added Run Script button to quickly run files in a new CraftOS-PC instance
