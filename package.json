@@ -209,7 +209,32 @@
 					"scope": "machine-overridable"
 				}
 			}
-		}
+		},
+		"debuggers": [
+			{
+				"type": "craftos-pc",
+				"label": "CraftOS-PC Debugger",
+				"runtime": "node",
+				"configurationAttributes": {
+					"launch": {
+						"required": [],
+						"properties": {
+							"program": {
+								"type": "string",
+								"description": "Program to launch when debugging"
+							}
+						}
+					}
+				},
+				"initialConfigurations": [
+					{
+						"type": "craftos-pc",
+						"request": "launch",
+						"name": "Start debugging"
+					}
+				]
+			}
+		]
 	},
 	"scripts": {
 		"lint": "eslint .",

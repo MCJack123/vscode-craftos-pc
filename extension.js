@@ -305,6 +305,26 @@ class RawFileSystemProvider {
     }
 }
 
+const debugAdapterFactory = {
+    createDebugAdapterDescriptor: (session, executable) => {
+        const exe_path = getSetting("craftos-pc.executablePath");
+        if (exe_path === null) {
+            vscode.window.showErrorMessage("Please set the path to the CraftOS-PC executable in the settings.");
+            return null;
+        }
+        if (!fs.existsSync(exe_path)) {
+            vscode.window.showErrorMessage("The CraftOS-PC executable could not be found. Check the path in the settings." + (os.platform() === "win32" ? " If you installed CraftOS-PC without administrator privileges, you will need to set the path manually. Also make sure CraftOS-PC_console.exe exists in the install directory - if not, reinstall CraftOS-PC with the Console build component enabled." : ""));
+            return null;
+        }
+        const dir = vscode.workspace.getConfiguration("craftos-pc").get("dataPath");
+        let args = vscode.workspace.getConfiguration("craftos-pc").get("additionalArguments");
+        if (args !== null) {args = args.split(' '); args.push("--exec"); args.push("periphemu.create(0,'debug_adapter')")}
+        else args = ["--exec", "periphemu.create(0,'debug_adapter')"];
+        if (dir !== null) args.splice(0, 0, "-d", dir);
+        return new vscode.DebugAdapterExecutable(exe_path, args);
+    }
+}
+
 /**
  * @param {Buffer} chunk data
  */
@@ -956,6 +976,8 @@ function activate(context) {
     context.subscriptions.push(vscode.window.registerUriHandler({handleUri: uri => {
         vscode.commands.executeCommand("craftos-pc.open-websocket", uri.path.replace(/^\//, ""));
     }}));
+
+    context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory("craftos-pc", debugAdapterFactory));
 
     vscode.window.createTreeView("craftos-computers", {"treeDataProvider": computer_provider});
     vscode.window.createTreeView("craftos-monitors", {"treeDataProvider": monitor_provider});
