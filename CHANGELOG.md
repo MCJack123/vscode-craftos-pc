@@ -2,6 +2,10 @@
 
 All notable changes to the "craftos-pc" extension will be documented in this file.
 
+## 1.2.0
+
+* Added debugger support for CraftOS-PC v2.? and later
+
 ## 1.1.8
 
 * Fixed a bug causing disconnections when sending large data packets

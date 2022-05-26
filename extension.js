@@ -306,22 +306,29 @@ class RawFileSystemProvider {
 }
 
 const debugAdapterFactory = {
+    /**
+     * @param {vscode.DebugSession} session
+     */
     createDebugAdapterDescriptor: (session, executable) => {
-        const exe_path = getSetting("craftos-pc.executablePath");
-        if (exe_path === null) {
-            vscode.window.showErrorMessage("Please set the path to the CraftOS-PC executable in the settings.");
-            return null;
-        }
-        if (!fs.existsSync(exe_path)) {
-            vscode.window.showErrorMessage("The CraftOS-PC executable could not be found. Check the path in the settings." + (os.platform() === "win32" ? " If you installed CraftOS-PC without administrator privileges, you will need to set the path manually. Also make sure CraftOS-PC_console.exe exists in the install directory - if not, reinstall CraftOS-PC with the Console build component enabled." : ""));
-            return null;
-        }
-        const dir = vscode.workspace.getConfiguration("craftos-pc").get("dataPath");
-        let args = vscode.workspace.getConfiguration("craftos-pc").get("additionalArguments");
-        if (args !== null) {args = args.split(' '); args.push("--exec"); args.push("periphemu.create(0,'debug_adapter')")}
-        else args = ["--exec", "periphemu.create(0,'debug_adapter')"];
-        if (dir !== null) args.splice(0, 0, "-d", dir);
-        return new vscode.DebugAdapterExecutable(exe_path, args);
+        if (session.configuration.request === "launch") {
+            const exe_path = getSetting("craftos-pc.executablePath");
+            if (exe_path === null) {
+                vscode.window.showErrorMessage("Please set the path to the CraftOS-PC executable in the settings.");
+                return null;
+            }
+            if (!fs.existsSync(exe_path)) {
+                vscode.window.showErrorMessage("The CraftOS-PC executable could not be found. Check the path in the settings." + (os.platform() === "win32" ? " If you installed CraftOS-PC without administrator privileges, you will need to set the path manually. Also make sure CraftOS-PC_console.exe exists in the install directory - if not, reinstall CraftOS-PC with the Console build component enabled." : ""));
+                return null;
+            }
+            const dir = vscode.workspace.getConfiguration("craftos-pc").get("dataPath");
+            let args = vscode.workspace.getConfiguration("craftos-pc").get("additionalArguments");
+            if (args !== null) {args = args.split(' '); args.push("--exec"); args.push("periphemu.create(0,'debug_adapter')")}
+            else args = ["--exec", "periphemu.create(0,'debug_adapter')"];
+            if (dir !== null) args.splice(0, 0, "-d", dir);
+            return new vscode.DebugAdapterExecutable(exe_path, args);
+        } else if (session.configuration.request === "attach") {
+            return new vscode.DebugAdapterServer(session.configuration.port || 12100, session.configuration.host);
+        } else return undefined;
     }
 }
 

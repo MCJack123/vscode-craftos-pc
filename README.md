@@ -10,8 +10,11 @@ An extension for Visual Studio Code adding a bunch of new features to help you w
 * Browse files on the connected computer in the current workspace
 * Connect to CraftOS-PC raw mode WebSocket servers
 * Use the remote.craftos-pc.cc service to open any ComputerCraft computer in VS Code (beta)
+* Debug code directly in VS Code using the native debugger interface
 
 ![Screenshot](media/screenshot.png)
+
+![Debugger screenshot](media/debugger.png)
 
 ## Requirements
 
@@ -40,12 +43,17 @@ This extension contributes the following settings:
 * Occasionally, keyboard input may stop working. To fix this, click outside the CraftOS-PC window and then back in.
 * Scroll events do not report the position of the scroll. This is a limitation of JavaScript.
 * Some versions of CraftOS-PC have bugs that interfere with the functioning of this extension:
+  * The debugger only works on CraftOS-PC v2.? or later.
   * Filesystem access only works on CraftOS-PC v2.6 or later, or any server implementing raw mode 1.1 or later.
   * v2.5.4-v2.5.5: Creating a new window results in a crash. This is fixed in v2.6.
   * v2.5.1-v2.5.1.1: CraftOS-PC often crashes in raw mode on these versions. This is fixed in v2.5.2.
   * v2.3-v2.3.4: All events are sent to the first window, and all windows have the same ID. This is fixed in v2.4.
 
 ## Release Notes
+
+## 1.2.0
+
+* Added debugger support for CraftOS-PC v2.? and later
 
 ## 1.1.8
 
