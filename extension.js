@@ -1,13 +1,14 @@
-const vscode = require('vscode');
-const path = require('path');
-const fs = require('fs');
-const os = require('os');
-const process = require('process');
-const https = require('https');
-const URL = require('url').URL;
-const WebSocket = require('ws');
 const child_process = require('child_process');
 const { SIGINT } = require('constants');
+const fs = require('fs');
+const https = require('https');
+const os = require('os');
+const path = require('path');
+const process = require('process');
+const semver = require('semver');
+const URL = require('url').URL;
+const vscode = require('vscode');
+const WebSocket = require('ws');
 
 var windows = {};
 var crcTable = null;
@@ -113,6 +114,7 @@ var useBinaryChecksum = false;
 var supportsFilesystem = false;
 var gotMessage = false;
 var didShowBetaMessage = false;
+var processFeatures = {};
 
 function getSetting(name) {
     const config = vscode.workspace.getConfiguration(name);
@@ -176,6 +178,31 @@ function queueDataRequest(id, type, path, path2) {
             clearTimeout(tid);
             if (!err) resolve(data);
             else reject(err);
+        }
+    });
+}
+
+function checkVersion(silent) {
+    const exe_path = getSetting("craftos-pc.executablePath");
+    if (exe_path === null) return;
+    child_process.execFile(exe_path, ["--version"], {windowsHide: true}, (err, stdout, stderr) => {
+        if (err) {
+            if (!silent) vscode.window.showErrorMessage("Failed to detect CraftOS-PC version (error: " + err.message + "). Please check that the path is correct and working properly.");
+            return;
+        }
+        let version = (stdout.match(/CraftOS-PC v([\d\.]+)/) || [])[1];
+        if (version === undefined || version === null) {
+            if (!silent) vscode.window.showErrorMessage("Failed to detect CraftOS-PC version (error: no version number detected)." + (os.platform === "win32" ? "Make sure the path is pointing to CraftOS-PC_console.exe, and not CraftOS-PC.exe." : ""));
+            return;
+        }
+        console.log(version);
+        version = semver.coerce(version);
+        processFeatures.debugger = semver.gt(version, "2.6.6");
+        processFeatures.filesystem = semver.gte(version, "2.6.0");
+        if (!silent) {
+            if (version == "2.5.4" || version == "2.5.5") vscode.window.showWarningMessage("This version of CraftOS-PC crashes when using multiple windows. Update to a newer version to fix this.");
+            else if (version == "2.5.1") vscode.window.showWarningMessage("This version of CraftOS-PC often crashes when using the extension. Update to a newer version to fix this.");
+            else if (semver.lt(version, "2.4.0")) vscode.window.showWarningMessage("This version of CraftOS-PC does not support using multiple windows properly. Update to a newer version to fix this.");
         }
     });
 }
@@ -311,6 +338,10 @@ const debugAdapterFactory = {
      */
     createDebugAdapterDescriptor: (session, executable) => {
         if (session.configuration.request === "launch") {
+            if (!processFeatures.debugger) {
+                vscode.window.showErrorMessage("This version of CraftOS-PC does not support debugging. Please update to the latest version.");
+                return null;
+            }
             const exe_path = getSetting("craftos-pc.executablePath");
             if (exe_path === null) {
                 vscode.window.showErrorMessage("Please set the path to the CraftOS-PC executable in the settings.");
@@ -986,8 +1017,19 @@ function activate(context) {
 
     context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory("craftos-pc", debugAdapterFactory));
 
+    let change_timer = null;
+    vscode.workspace.onDidChangeConfiguration(event => {
+        if (event.affectsConfiguration("craftos-pc.executablePath")) {
+            // Use a timer to debounce quick autosaves
+            if (change_timer !== null) clearTimeout(change_timer);
+            change_timer = setTimeout(() => {change_timer = null; checkVersion(false);}, 3000);
+        }
+    });
+
     vscode.window.createTreeView("craftos-computers", {"treeDataProvider": computer_provider});
     vscode.window.createTreeView("craftos-monitors", {"treeDataProvider": monitor_provider});
+
+    checkVersion(true);
 }
 exports.activate = activate;
 
