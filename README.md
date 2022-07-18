@@ -42,18 +42,39 @@ This extension contributes the following settings:
 
 * Occasionally, keyboard input may stop working. To fix this, click outside the CraftOS-PC window and then back in.
 * Scroll events do not report the position of the scroll. This is a limitation of JavaScript.
+* Live Share support does not respect read-only mode due to a limitation in the Live Share API.
 * Some versions of CraftOS-PC have bugs that interfere with the functioning of this extension:
-  * The debugger only works on CraftOS-PC v2.? or later.
+  * The debugger only works on CraftOS-PC v2.7 or later.
   * Filesystem access only works on CraftOS-PC v2.6 or later, or any server implementing raw mode 1.1 or later.
   * v2.5.4-v2.5.5: Creating a new window results in a crash. This is fixed in v2.6.
   * v2.5.1-v2.5.1.1: CraftOS-PC often crashes in raw mode on these versions. This is fixed in v2.5.2.
   * v2.3-v2.3.4: All events are sent to the first window, and all windows have the same ID. This is fixed in v2.4.
 
+### Live Share
+
+The VS Code Live Share extension uses a permission list to check whether an extension is allowed to use certain parts of the API. Unfortunately, that list does not include this extension (yet), so Live Share support requires creating a special config file to enable it manually.
+
+To fix this, create a file called `.vs-liveshare-settings.json` in your home folder, and paste this inside the file:
+
+```json
+{
+    "extensionPermissions": {
+        "JackMacWindows.craftos-pc": [
+            "shareServices"
+        ]
+    }
+}
+```
+
+Then reload VS Code and run Live Share again.
+
 ## Release Notes
 
 ## 1.2.0
 
-* Added debugger support for CraftOS-PC v2.? and later
+* Added debugger support for CraftOS-PC v2.7 and later
+* Added support for Visual Studio Live Share
+  * This currently requires manually allowing the extension to communicate
 
 ## 1.1.8
 

@@ -8,6 +8,7 @@ const process = require('process');
 const semver = require('semver');
 const URL = require('url').URL;
 const vscode = require('vscode');
+const vsls = require('vsls');
 const WebSocket = require('ws');
 
 var windows = {};
@@ -115,6 +116,12 @@ var supportsFilesystem = false;
 var gotMessage = false;
 var didShowBetaMessage = false;
 var processFeatures = {};
+/** @type vsls.LiveShare|null */
+var liveshare = null;
+/** @type vsls.SharedServiceProxy|null */
+var vslsClient = null;
+/** @type vsls.SharedService|null */
+var vslsServer = null;
 
 function getSetting(name) {
     const config = vscode.workspace.getConfiguration(name);
@@ -139,6 +146,7 @@ function closeAllWindows() {
     windows = {};
     computer_provider._onDidChangeTreeData.fire(null);
     monitor_provider._onDidChangeTreeData.fire(null);
+    if (vslsServer !== null) vslsServer.notify("windows", {});
 }
 
 function queueDataRequest(id, type, path, path2) {
@@ -489,6 +497,7 @@ function processDataChunk(chunk) {
                 delete windows[id];
                 computer_provider._onDidChangeTreeData.fire(null);
                 monitor_provider._onDidChangeTreeData.fire(null);
+                if (vslsServer !== null) vslsServer.notify("windows", windows);
                 chunk = chunk.subarray(size + 16);
                 while (String.fromCharCode(chunk[0]).match(/\s/)) chunk = chunk.subarray(1);
                 continue;
@@ -525,6 +534,7 @@ function processDataChunk(chunk) {
             useBinaryChecksum = (flags & 1) === 1;
             supportsFilesystem = (flags & 2) === 2;
             computer_provider._onDidChangeTreeData.fire(null);
+            if (vslsServer !== null) vslsServer.notify("flags", {isVersion11: isVersion11, useBinaryChecksum: useBinaryChecksum, supportsFilesystem: false});
         } else if (type === 8) {
             const reqtype = stream.get();
             const reqid = stream.get();
@@ -603,7 +613,8 @@ function processDataChunk(chunk) {
             else dataRequestCallbacks[reqid](data);
             delete dataRequestCallbacks[reqid];
         }
-        if (windows[id] === undefined) windows[id] = {};
+        let newWindow = false;
+        if (windows[id] === undefined) {windows[id] = {}; newWindow = true;}
         if (windows[id].term === undefined) windows[id].term = {};
         for (let k in term) windows[id].term[k] = term[k];
         if (windows[id].isMonitor === undefined) {
@@ -618,6 +629,10 @@ function processDataChunk(chunk) {
         if (windows[id].panel !== undefined) {
             windows[id].panel.webview.postMessage(windows[id].term);
             windows[id].panel.title = windows[id].term.title || "CraftOS-PC Terminal";
+        }
+        if (vslsServer !== null) {
+            if (newWindow) vslsServer.notify("windows", windows);
+            else vslsServer.notify("term", {id: id, term: windows[id].term, refresh: type === 4});
         }
         if (type === 4) {
             computer_provider._onDidChangeTreeData.fire(null);
@@ -794,12 +809,14 @@ function openPanel(id, force) {
         }
     });
     panel.onDidDispose(() => {if (windows[id].panel !== undefined) delete windows[id].panel;});
-    if (windows[id] === undefined) windows[id] = {};
+    let newWindow = false;
+    if (windows[id] === undefined) {windows[id] = {}; newWindow = true;}
     windows[id].panel = panel;
     if (windows[id].term !== undefined) {
         windows[id].panel.webview.postMessage(windows[id].term);
         windows[id].panel.title = windows[id].term.title || "CraftOS-PC Terminal";
     }
+    if (newWindow && vslsServer !== null) vslsServer.notify("windows", windows);
 }
 
 /**
@@ -1028,6 +1045,85 @@ function activate(context) {
 
     vscode.window.createTreeView("craftos-computers", {"treeDataProvider": computer_provider});
     vscode.window.createTreeView("craftos-monitors", {"treeDataProvider": monitor_provider});
+
+    vsls.getApi(context.extension.id).then(api => {
+        if (api === null) return;
+        liveshare = api;
+        const updateSession = () => {
+            if (liveshare.session.role === vsls.Role.Host && vslsServer === null) {
+                if (vslsClient !== null && process_connection === null) {
+                    windows = {};
+                    computer_provider._onDidChangeTreeData.fire(null);
+                    monitor_provider._onDidChangeTreeData.fire(null);
+                    vslsClient = null;
+                }
+                liveshare.shareService("terminal").then(svc => {
+                    vslsServer = svc;
+                    vslsServer.onNotify("packet", data => {
+                        // TODO: Add actual access control (MicrosoftDocs/live-share#1716)
+                        const peer = liveshare.peers.find(a => a.peerNumber == data.peer);
+                        if (process_connection !== null && (peer.access === vsls.Access.ReadWrite || peer.access === vsls.Access.Owner)) process_connection.stdin.write(data.data, "utf8");
+                    });
+                    vslsServer.onNotify("get-windows", () => {
+                        vslsServer.notify("windows", windows);
+                        vslsServer.notify("flags", {isVersion11: isVersion11, useBinaryChecksum: useBinaryChecksum, supportsFilesystem: false});
+                    });
+                }).catch(err => vscode.window.showErrorMessage("Could not create Live Share service: " + err));
+            } else if (liveshare.session.role === vsls.Role.Guest && vslsClient === null) {
+                vslsServer = null;
+                liveshare.getSharedService("terminal").then(svc => {
+                    vslsClient = svc;
+                    vslsClient.onNotify("windows", param => {
+                        let newwindows = {};
+                        for (let id in param) newwindows[id] = {term: param[id].term, isMonitor: param[id].isMonitor, panel: windows[id] ? windows[id].panel : undefined};
+                        for (let id in windows) if (!newwindows[id] && windows[id].panel) windows[id].panel.dispose();
+                        windows = newwindows;
+                        computer_provider._onDidChangeTreeData.fire(null);
+                        monitor_provider._onDidChangeTreeData.fire(null);
+                    });
+                    vslsClient.onNotify("term", param => {
+                        windows[param.id].term = param.term
+                        if (windows[param.id].panel) {
+                            windows[param.id].panel.webview.postMessage(param.term);
+                            windows[param.id].panel.title = param.term.title || "CraftOS-PC Terminal";
+                        }
+                        if (param.refresh) {
+                            computer_provider._onDidChangeTreeData.fire(null);
+                            monitor_provider._onDidChangeTreeData.fire(null);
+                        }
+                    });
+                    vslsClient.onNotify("flags", param => {
+                        isVersion11 = param.isVersion11;
+                        useBinaryChecksum = param.useBinaryChecksum;
+                        supportsFilesystem = param.supportsFilesystem;
+                    });
+                    process_connection = {
+                        connected: true,
+                        disconnect: () => {},
+                        kill: () => {},
+                        stdin: {write: data => {
+                            if (liveshare.session.access === vsls.Access.ReadWrite || liveshare.session.access === vsls.Access.Owner) vslsClient.notify("packet", {data: data, peer: liveshare.session.peerNumber});
+                        }}
+                    };
+                    vslsClient.notify("get-windows", {});
+                }).catch(err => vscode.window.showErrorMessage("Could not connect to Live Share service: " + err));
+            } else if (liveshare.session.role === vsls.Role.None) {
+                if (vslsClient !== null && process_connection !== null && process_connection.isLiveShare) {
+                    windows = {};
+                    computer_provider._onDidChangeTreeData.fire(null);
+                    monitor_provider._onDidChangeTreeData.fire(null);
+                    vslsClient = null;
+                    process_connection = null;
+                }
+                vslsServer = null;
+            }
+        };
+        liveshare.onDidChangeSession(updateSession);
+        liveshare.onDidChangePeers(() => {
+            if (vslsServer !== null) vslsServer.notify("windows", windows);
+        });
+        if (liveshare.session.role !== vsls.Role.None) updateSession();
+    });
 
     checkVersion(true);
 }

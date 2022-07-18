@@ -4,7 +4,9 @@ All notable changes to the "craftos-pc" extension will be documented in this fil
 
 ## 1.2.0
 
-* Added debugger support for CraftOS-PC v2.? and later
+* Added debugger support for CraftOS-PC v2.7 and later
+* Added support for Visual Studio Live Share
+  * This currently requires manually allowing the extension to communicate
 
 ## 1.1.8
 
