@@ -14,6 +14,8 @@ const WebSocket = require('ws');
 var windows = {};
 var crcTable = null;
 var extcontext = null;
+/** @type vscode.OutputChannel */
+var log = {appendLine: () => {}};
 
 function makeCRCTable() {
     let c;
@@ -141,6 +143,21 @@ function getDataPath() {
     else return null;
 }
 
+function getExecutable() {
+    let path = getSetting("craftos-pc.executablePath");
+    if (path !== null && fs.existsSync(path)) return path;
+    if (os.platform() === "win32") {
+        path = "%localappdata%\\Programs\\CraftOS-PC\\CraftOS-PC_console.exe".replace(/%([^%]+)%/g, (_, n) => process.env[n] || ('%' + n + '%'));
+        if (fs.existsSync(path)) return path;
+    }
+    if (path !== null && os.platform() === "win32" && fs.existsSync(path.replace("_console", ""))) {
+        vscode.window.showErrorMessage("The CraftOS-PC installation is missing the console version, which is required for this extension to function. Please run the installer again, making sure to check the 'Console build for raw mode' box.");
+        return null;
+    }
+    vscode.window.showErrorMessage("The CraftOS-PC executable could not be found. Check the path in the settings. If you haven't installed CraftOS-PC yet, [download it from the official website.](https://www.craftos-pc.cc)");
+    return null;
+}
+
 function closeAllWindows() {
     for (let k in windows) if (windows[k].panel !== undefined) windows[k].panel.dispose();
     windows = {};
@@ -179,7 +196,7 @@ function queueDataRequest(id, type, path, path2) {
     return new Promise((resolve, reject) => {
         let tid = setTimeout(() => {
             delete dataRequestCallbacks[data[3]];
-            console.log("Could not get info for " + path + " (request " + data[3] + ")");
+            log.appendLine("Could not get info for " + path + " (request " + data[3] + ")");
             reject(new Error("Timeout"));
         }, 3000);
         dataRequestCallbacks[data[3]] = (data, err) => {
@@ -203,7 +220,7 @@ function checkVersion(silent) {
             if (!silent) vscode.window.showErrorMessage("Failed to detect CraftOS-PC version (error: no version number detected)." + (os.platform === "win32" ? "Make sure the path is pointing to CraftOS-PC_console.exe, and not CraftOS-PC.exe." : ""));
             return;
         }
-        console.log(version);
+        log.appendLine("Detected CraftOS-PC " + version);
         version = semver.coerce(version);
         processFeatures.debugger = semver.gt(version, "2.6.6");
         processFeatures.filesystem = semver.gte(version, "2.6.0");
@@ -385,7 +402,7 @@ function processDataChunk(chunk) {
         if (chunk.subarray(0, 4).toString() === "!CPC") off = 8;
         else if (chunk.subarray(0, 4).toString() === "!CPD" && isVersion11) off = 16;
         else {
-            console.error("Invalid message");
+            log.appendLine("Invalid message");
             return;
         }
         const size = parseInt(chunk.subarray(4, off).toString(), 16);
@@ -397,7 +414,7 @@ function processDataChunk(chunk) {
         const good_checksum = parseInt(chunk.subarray(size + off, size + off + 8).toString(), 16);
         const data_checksum = crc32(useBinaryChecksum ? data.toString("binary") : chunk.subarray(off, size + off).toString());
         if (good_checksum !== data_checksum) {
-            console.error("Bad checksum: expected " + good_checksum.toString(16) + ", got " + data_checksum.toString(16));
+            log.appendLine("Bad checksum: expected " + good_checksum.toString(16) + ", got " + data_checksum.toString(16));
             chunk = chunk.subarray(size + 16);
             while (String.fromCharCode(chunk[0]).match(/\s/)) chunk = chunk.subarray(1);
             continue;
@@ -539,7 +556,7 @@ function processDataChunk(chunk) {
             const reqtype = stream.get();
             const reqid = stream.get();
             if (!dataRequestCallbacks[reqid]) {
-                console.log("Got stray response for request ID " + reqid + ", ignoring.");
+                log.appendLine("Got stray response for request ID " + reqid + ", ignoring.");
                 chunk = chunk.subarray(size + 16);
                 while (String.fromCharCode(chunk[0]).match(/\s/)) chunk = chunk.subarray(1);
                 continue;
@@ -601,7 +618,7 @@ function processDataChunk(chunk) {
             const fail = stream.get();
             const reqid = stream.get();
             if (!dataRequestCallbacks[reqid]) {
-                console.log("Got stray data response for request ID " + reqid + ", ignoring.");
+                log.appendLine("Got stray data response for request ID " + reqid + ", ignoring.");
                 chunk = chunk.subarray(size + 16);
                 while (String.fromCharCode(chunk[0]).match(/\s/)) chunk = chunk.subarray(1);
                 continue;
@@ -645,13 +662,8 @@ function processDataChunk(chunk) {
 
 function connectToProcess(extra_args) {
     if (process_connection !== null) return true;
-    const exe_path = getSetting("craftos-pc.executablePath");
+    const exe_path = getExecutable();
     if (exe_path === null) {
-        vscode.window.showErrorMessage("Please set the path to the CraftOS-PC executable in the settings.");
-        return false;
-    }
-    if (!fs.existsSync(exe_path)) {
-        vscode.window.showErrorMessage("The CraftOS-PC executable could not be found. Check the path in the settings." + (os.platform() === "win32" ? " If you installed CraftOS-PC without administrator privileges, you will need to set the path manually. Also make sure CraftOS-PC_console.exe exists in the install directory - if not, reinstall CraftOS-PC with the Console build component enabled." : ""));
         return false;
     }
     const dir = vscode.workspace.getConfiguration("craftos-pc").get("dataPath");
@@ -663,12 +675,12 @@ function connectToProcess(extra_args) {
     else args = ["--raw"];
     if (dir !== null) args.splice(-1, 0, "-d", dir);
     if (extra_args !== null) args = args.concat(extra_args);
-    console.log("Running: " + exe_path + " " + args.join(" "));
+    log.appendLine("Running: " + exe_path + " " + args.join(" "));
     try {
         process_connection = child_process.spawn(exe_path, args, process_options);
     } catch (e) {
         vscode.window.showErrorMessage("The CraftOS-PC worker process could not be launched. Check the path to the executable in the settings.");
-        console.error(e);
+        log.appendLine(e);
         return;
     }
     process_connection.on("error", () => {
@@ -692,8 +704,8 @@ function connectToProcess(extra_args) {
         closeAllWindows();
     });
     process_connection.stdout.on("data", processDataChunk);
-    process_connection.stderr.on('data', data => {
-        console.error(data.toString());
+    process_connection.stderr.on("data", data => {
+        log.appendLine(data.toString());
     });
     //process_connection.stdin.write("!CPC0008BgACAA==FBAC4FC2\n"); // 0x0002
     process_connection.stdin.write("!CPC0008BgADAA==498C93D2\n"); // 0x0003
@@ -824,9 +836,7 @@ function openPanel(id, force) {
  */
 function activate(context) {
 
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "craftos-pc" is now active!');
+    log.appendLine("The CraftOS-PC extension is now active.");
 
     extcontext = context;
 
@@ -994,7 +1004,7 @@ function activate(context) {
             data[1] = parseInt(id);
             data[2] = 1;
             const b64 = data.toString("base64");
-            process_connection.stdin.write("!CPC000C" + b64 + ("0000000" + crc32(useBinaryChecksum ? data.toString("binary") : b64).toString(16)).slice(-8) + "\n", "utf8");
+            process_connection.stdin.write("!CPC000C" + b64 + ("0000000" + crc32(useBinaryChecksum ? data.toString("binary") : b64).toString(16)).slice(-8) + "\n\n", "utf8");
         });
     }));
 
@@ -1033,6 +1043,8 @@ function activate(context) {
     }}));
 
     context.subscriptions.push(vscode.debug.registerDebugAdapterDescriptorFactory("craftos-pc", debugAdapterFactory));
+    
+    log = vscode.window.createOutputChannel("CraftOS-PC");
 
     let change_timer = null;
     vscode.workspace.onDidChangeConfiguration(event => {

@@ -70,6 +70,12 @@ Then reload VS Code and run Live Share again.
 
 ## Release Notes
 
+## 1.2.1
+
+* Added automatic detection of user installations on Windows
+* Adjusted some error messages to be more descriptive
+* Added a new output channel for debugging messages
+
 ## 1.2.0
 
 * Added debugger support for CraftOS-PC v2.7 and later
