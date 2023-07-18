@@ -168,6 +168,11 @@ function closeAllWindows() {
 
 function queueDataRequest(id, type, path, path2) {
     if (process_connection === null) return new Promise((resolve, reject) => reject(new Error("Path does not exist")));
+    let filedata = undefined;
+    if ((type & 0xF1) === 0x11) {
+        filedata = path2;
+        path2 = undefined;
+    }
     const pathbuf = Buffer.from(path, "latin1");
     const path2buf = (typeof path2 === "string" ? Buffer.from(path2, "latin1") : null);
     const data = Buffer.alloc(5 + pathbuf.length + (typeof path2 === "string" ? path2buf.length + 1 : 0));
@@ -177,20 +182,20 @@ function queueDataRequest(id, type, path, path2) {
     data[3] = nextDataRequestID;
     nextDataRequestID = (nextDataRequestID + 1) & 0xFF;
     pathbuf.copy(data, 4);
-    if (typeof path2 == "string") path2buf.copy(data, 5 + pathbuf.length);
+    if (typeof path2 === "string") path2buf.copy(data, 5 + pathbuf.length);
     const b64 = data.toString('base64');
     const packet = "!CPC" + ("000" + b64.length.toString(16)).slice(-4) + b64 + ("0000000" + crc32(useBinaryChecksum ? data.toString("binary") : b64).toString(16)).slice(-8) + "\n";
     process_connection.stdin.write(packet, 'utf8');
-    if ((type & 0xF1) == 0x11) {
-        const data2 = Buffer.alloc(8 + path2.length);
+    if (typeof filedata !== "undefined") {
+        const data2 = Buffer.alloc(8 + filedata.length);
         data2[0] = 9;
         data2[1] = id;
         data2[2] = 0;
         data2[3] = data[3];
-        data2.writeInt32LE(path2.length, 4);
-        path2.copy(data2, 8);
+        data2.writeInt32LE(filedata.length, 4);
+        filedata.copy(data2, 8);
         const b642 = data2.toString('base64');
-        const packet2 = (data2.length > 65535 ? "!CPD" + ("00000000000" + b642.length.toString(16)).slice(-12) : "!CPC" + ("000" + b642.length.toString(16)).slice(-4)) + b642 + ("0000000" + crc32(useBinaryChecksum ? data2.toString("binary") : b642).toString(16)).slice(-8) + "\n";
+        const packet2 = (b642.length > 65535 ? "!CPD" + ("00000000000" + b642.length.toString(16)).slice(-12) : "!CPC" + ("000" + b642.length.toString(16)).slice(-4)) + b642 + ("0000000" + crc32(useBinaryChecksum ? data2.toString("binary") : b642).toString(16)).slice(-8) + "\n";
         process_connection.stdin.write(packet2, 'utf8');
     }
     return new Promise((resolve, reject) => {

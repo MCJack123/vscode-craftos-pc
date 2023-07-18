@@ -2,6 +2,10 @@
 
 All notable changes to the "craftos-pc" extension will be documented in this file.
 
+## 1.2.2
+
+* Fixed an issue preventing uploading files between 48-64 kB in size
+
 ## 1.2.1
 
 * Added automatic detection of user installations on Windows
