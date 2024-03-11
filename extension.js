@@ -977,6 +977,7 @@ function activate(context) {
             return;
         }
         if (typeof obj === "object") {
+            vscode.window.showInformationMessage("A workspace is already open; the files have been added to the current workspace.");
             vscode.workspace.updateWorkspaceFolders(vscode.workspace.workspaceFolders ? vscode.workspace.workspaceFolders.length : 0, null, {name: obj.title.replace(/^.*: */, ""), uri: vscode.Uri.parse(`craftos-pc://${obj.id}/`)});
         } else {
             vscode.window.showInputBox({prompt: "Enter the window ID:", validateInput: str => isNaN(parseInt(str)) ? "Invalid number" : null}).then(value => {
