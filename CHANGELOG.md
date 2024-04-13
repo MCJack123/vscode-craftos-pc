@@ -2,6 +2,11 @@
 
 All notable changes to the "craftos-pc" extension will be documented in this file.
 
+## 1.2.3
+
+* Added a new very prominent button to open files
+* Added an extra alert when the files are already open
+
 ## 1.2.2
 
 * Fixed an issue preventing uploading files between 48-64 kB in size

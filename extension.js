@@ -987,6 +987,10 @@ function activate(context) {
         }
     }));
 
+    context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.open-primary-remote-data', obj => {
+        vscode.commands.executeCommand("craftos-pc.open-remote-data", {title: "", id: 0})
+    }));
+
     context.subscriptions.push(vscode.commands.registerCommand('craftos-pc.close', () => {
         if (process_connection === null) {
             vscode.window.showErrorMessage("Please open CraftOS-PC before using this command.");
