@@ -43,6 +43,11 @@
 				"title": "CraftOS-PC: Open New remote.craftos-pc.cc Session"
 			},
 			{
+				"command": "craftos-pc.add-connection",
+				"title": "CraftOS-PC: Add Connection",
+				"icon": "$(add)"
+			},
+			{
 				"command": "craftos-pc.open-window",
 				"title": "CraftOS-PC: Open Window with ID..."
 			},
@@ -93,6 +98,11 @@
 			{
 				"command": "craftos-pc.clear-history",
 				"title": "CraftOS-PC: Clear WebSocket History"
+			},
+			{
+				"command": "craftos-pc.debug-connections",
+				"title": "CraftOS-PC: Debug - Print Connection Info",
+				"icon": "$(bug)"
 			},
 			{
 				"command": "craftos-pc.run-file",
@@ -153,14 +163,24 @@
 			],
 			"view/title": [
 				{
-					"command": "craftos-pc.open-config",
+					"command": "craftos-pc.add-connection",
 					"when": "view == craftos-computers",
 					"group": "navigation@1"
 				},
 				{
-					"command": "craftos-pc.close",
+					"command": "craftos-pc.open-config",
 					"when": "view == craftos-computers",
 					"group": "navigation@2"
+				},
+				{
+					"command": "craftos-pc.close",
+					"when": "view == craftos-computers",
+					"group": "navigation@3"
+				},
+				{
+					"command": "craftos-pc.debug-connections",
+					"when": "view == craftos-computers",
+					"group": "debug@1"
 				}
 			],
 			"editor/title": [
@@ -215,6 +235,12 @@
 					"default": null,
 					"description": "The path to a custom font, if desired. Must be a path to a valid image, or 'hdfont' to automatically find the HD font.",
 					"scope": "machine-overridable"
+				},
+				"craftos-pc.autoConnectFilesystem": {
+					"type": "boolean",
+					"default": false,
+					"description": "Automatically connect the computer filesystem to VS Code workspace when a new connection supports filesystem access.",
+					"scope": "window"
 				}
 			}
 		},

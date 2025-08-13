@@ -8,9 +8,12 @@ An extension for Visual Studio Code adding a bunch of new features to help you w
 * Quickly access computer data directories and the configuration
 * Run ComputerCraft Lua scripts in CraftOS-PC
 * Browse files on the connected computer in the current workspace
+* Automatic filesystem connection when a new CraftOS-PC session supports file access
+* Easy connection management with "Add Connection" button in the Computers view
 * Connect to CraftOS-PC raw mode WebSocket servers
 * Use the remote.craftos-pc.cc service to open any ComputerCraft computer in VS Code (beta)
 * Debug code directly in VS Code using the native debugger interface
+* Built-in debug tools for troubleshooting connection issues
 
 ![Screenshot](media/screenshot.png)
 
@@ -37,6 +40,7 @@ This extension contributes the following settings:
 * `craftos-pc.dataPath`: Path to the data directory storing computer files, configuration, etc.
 * `craftos-pc.additionalArguments`: Additional command-line arguments to send to CraftOS-PC, separated by spaces.
 * `craftos-pc.customFont.path`: The path to a custom font, if desired. Must be a path to a valid image, or 'hdfont' to automatically find the HD font. Unlike normal CraftOS-PC, this may point to non-BMP files as well.
+* `craftos-pc.autoConnectFilesystem`: Automatically connect the computer filesystem to the VS Code workspace when a new connection supports filesystem access. Default is `false`.
 
 ## Known Issues
 
